@@ -25,9 +25,9 @@ async fn main() {
 
     let (mpsc_downstream, mut mpsc_upstream) = tokio::sync::mpsc::channel(100);
 
-    tokio::spawn(websocket_multiplexed(Url::parse(ws_url1.as_str()).unwrap(), mpsc_downstream.clone()));
-    tokio::spawn(websocket_multiplexed(Url::parse(ws_url2.as_str()).unwrap(), mpsc_downstream.clone()));
-    tokio::spawn(rpc_getslot_multiplexed(Url::parse(rpc_url.as_str()).unwrap(), mpsc_downstream.clone()));
+    tokio::spawn(websocket_source(Url::parse(ws_url1.as_str()).unwrap(), mpsc_downstream.clone()));
+    tokio::spawn(websocket_source(Url::parse(ws_url2.as_str()).unwrap(), mpsc_downstream.clone()));
+    tokio::spawn(rpc_getslot_source(Url::parse(rpc_url.as_str()).unwrap(), mpsc_downstream.clone()));
 
     while let Some(slot) = mpsc_upstream.recv().await {
         println!("Slot: {}", slot);
@@ -36,7 +36,7 @@ async fn main() {
     sleep(Duration::from_secs(10));
 }
 
-async fn rpc_getslot_multiplexed(
+async fn rpc_getslot_source(
     rpc_url: Url,
     mpsc_downstream: tokio::sync::mpsc::Sender<Slot>,
 )  {
@@ -54,7 +54,7 @@ async fn rpc_getslot_multiplexed(
 }
 
 
-async fn websocket_multiplexed(
+async fn websocket_source(
     rpc_url: Url,
     mpsc_downstream: tokio::sync::mpsc::Sender<Slot>,
 )  {
