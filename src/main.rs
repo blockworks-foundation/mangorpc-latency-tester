@@ -12,7 +12,6 @@ use url::Url;
 
 type Slot = u64;
 
-
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() {
     tracing_subscriber::fmt::init();
@@ -23,13 +22,13 @@ async fn main() {
     let rpc_url = format!("https://mango.rpcpool.com/{MAINNET_API_TOKEN}",
                           MAINNET_API_TOKEN = std::env::var("MAINNET_API_TOKEN").unwrap());
 
-    let (mpsc_downstream, mut mpsc_upstream) = tokio::sync::mpsc::channel(100);
+    let (slots_tx, mut slots_rx) = tokio::sync::mpsc::channel(100);
 
-    tokio::spawn(websocket_source(Url::parse(ws_url1.as_str()).unwrap(), mpsc_downstream.clone()));
-    tokio::spawn(websocket_source(Url::parse(ws_url2.as_str()).unwrap(), mpsc_downstream.clone()));
-    tokio::spawn(rpc_getslot_source(Url::parse(rpc_url.as_str()).unwrap(), mpsc_downstream.clone()));
+    tokio::spawn(websocket_source(Url::parse(ws_url1.as_str()).unwrap(), slots_tx.clone()));
+    tokio::spawn(websocket_source(Url::parse(ws_url2.as_str()).unwrap(), slots_tx.clone()));
+    tokio::spawn(rpc_getslot_source(Url::parse(rpc_url.as_str()).unwrap(), slots_tx.clone()));
 
-    while let Some(slot) = mpsc_upstream.recv().await {
+    while let Some(slot) = slots_rx.recv().await {
         println!("Slot: {}", slot);
     }
 
