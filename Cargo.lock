@@ -1817,10 +1817,12 @@ checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
 name = "mangorpc-latency-tester"
 version = "0.1.0"
 dependencies = [
+ "futures-util",
  "geyser-grpc-connector",
  "jsonrpsee-types",
  "serde",
  "serde_json",
+ "solana-account-decoder",
  "solana-rpc-client",
  "solana-rpc-client-api",
  "solana-sdk",

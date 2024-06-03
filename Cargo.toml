@@ -15,6 +15,7 @@ path = "src/slot_latency_tester.rs"
 solana-sdk = "1.17.31"
 solana-rpc-client = "1.17.31"
 solana-rpc-client-api = "1.17.31"
+solana-account-decoder = "1.17.31"
 websocket-tungstenite-retry = { git = "https://github.com/grooviegermanikus/websocket-tungstenite-retry.git", tag = "v0.8.0" }
 geyser-grpc-connector = { tag = "v0.10.6+yellowstone.1.13+solana.1.17.28", git = "https://github.com/blockworks-foundation/geyser-grpc-connector.git" }
 yellowstone-grpc-client = "~1.14.0"
@@ -25,6 +26,7 @@ tracing-subscriber = "0.3.18"
 
 tokio = { version = "1.28.2", features = ["full", "fs"] }
 tokio-stream = { version = "0.1.15", features = ["sync"] }
+futures-util = "0.3.30"
 serde = { version = "^1.0", features = ["derive"] }
 serde_json = "^1.0"
 jsonrpsee-types = "0.22.2"
