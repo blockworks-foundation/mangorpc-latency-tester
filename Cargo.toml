@@ -8,7 +8,9 @@ solana-sdk = "1.17.31"
 solana-rpc-client = "1.17.31"
 solana-rpc-client-api = "1.17.31"
 websocket-tungstenite-retry = { git = "https://github.com/grooviegermanikus/websocket-tungstenite-retry.git", tag = "v0.8.0" }
-quic-geyser-client = { git = "https://github.com/blockworks-foundation/quic_geyser_plugin.git", rev = "2406976" }
+geyser-grpc-connector = { tag = "v0.10.6+yellowstone.1.13+solana.1.17.28", git = "https://github.com/blockworks-foundation/geyser-grpc-connector.git" }
+yellowstone-grpc-client = "~1.14.0"
+yellowstone-grpc-proto = "~1.13.0"
 
 tracing = "0.1.40"
 tracing-subscriber = "0.3.18"

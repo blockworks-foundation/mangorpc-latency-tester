@@ -1,6 +1,10 @@
+use std::collections::HashMap;
+use std::pin::pin;
 use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
+use geyser_grpc_connector::{GrpcConnectionTimeouts, GrpcSourceConfig, Message};
+use geyser_grpc_connector::grpc_subscription_autoreconnect_streams::create_geyser_reconnecting_stream;
 use serde_json::json;
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client::rpc_client::GetConfirmedSignaturesForAddress2Config;
@@ -9,12 +13,15 @@ use solana_rpc_client_api::response::SlotInfo;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey::Pubkey;
 use tokio::select;
+use tokio::sync::mpsc::error::SendError;
 use tokio::time::Instant;
 use tokio_stream::{Stream, StreamExt};
 use tokio_stream::wrappers::{BroadcastStream, ReceiverStream};
-use tracing::info;
+use tracing::{info, trace, warn};
 use websocket_tungstenite_retry::websocket_stable::{StableWebSocket, WsMessage};
 use url::Url;
+use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterAccounts, SubscribeRequestFilterSlots, SubscribeUpdate};
+use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
 
 type Slot = u64;
 
@@ -30,6 +37,7 @@ async fn main() {
     let rpc_url = Url::parse(rpc_url.as_str()).unwrap();
     let rpc_client = RpcClient::new(rpc_url.to_string());
 
+    let grpc_addr = std::env::var("GRPC_ADDR").unwrap();
 
     rpc_gpa(&rpc_client).await;
 
@@ -41,7 +49,39 @@ async fn main() {
 
     websocket_account_subscribe(Url::parse(ws_url2.as_str()).unwrap()).await;
 
+    let timeouts = GrpcConnectionTimeouts {
+        connect_timeout: Duration::from_secs(10),
+        request_timeout: Duration::from_secs(10),
+        subscribe_timeout: Duration::from_secs(10),
+        receive_timeout: Duration::from_secs(10),
+    };
+
+
+    let config = GrpcSourceConfig::new(grpc_addr.to_string(), None, None, timeouts.clone());
+
+    let green_stream = create_geyser_reconnecting_stream(
+        config.clone(),
+        usdc_token_account(),
+    );
+
     let (slots_tx, mut slots_rx) = tokio::sync::mpsc::channel(100);
+
+    tokio::spawn(async move {
+        let mut green_stream = pin!(green_stream);
+        while let Some(message) = green_stream.next().await {
+            match message {
+                Message::GeyserSubscribeUpdate(subscriber_update) => {
+                    match subscriber_update.update_oneof {
+                        Some(UpdateOneof::Account(update)) => {
+                            info!("ORCA Account: {:?}", update.account.unwrap().pubkey);
+                        }
+                        _ => {}
+                    }
+                }
+                _ => {}
+            }
+        }
+    });
 
 
     tokio::spawn(websocket_source(Url::parse(ws_url1.as_str()).unwrap(), slots_tx.clone()));
@@ -58,7 +98,7 @@ async fn main() {
         }
     }
 
-//    sleep(Duration::from_secs(2));
+   sleep(Duration::from_secs(15));
 }
 
 async fn rpc_gpa(rpc_client: &RpcClient)  {
@@ -177,7 +217,10 @@ async fn rpc_getslot_source(
             .get_slot_with_commitment(CommitmentConfig::processed())
             .await
             .unwrap();
-        mpsc_downstream.send(slot).await.unwrap();
+        match mpsc_downstream.send(slot).await {
+            Ok(_) => {}
+            Err(_) => return
+        }
     }
 
 }
@@ -209,8 +252,39 @@ async fn websocket_source(
         if let WsMessage::Text(payload) = msg {
             let ws_result: jsonrpsee_types::SubscriptionResponse<SlotInfo> = serde_json::from_str(&payload).unwrap();
             let slot_info = ws_result.params.result;
-            mpsc_downstream.send(slot_info.slot).await.unwrap();
+            match mpsc_downstream.send(slot_info.slot).await {
+                Ok(_) => {}
+                Err(_) => return
+            }
         }
     }
 
 }
+
+
+pub fn usdc_token_account() -> SubscribeRequest {
+    let mut accounts_subs = HashMap::new();
+    accounts_subs.insert(
+        "client".to_string(),
+        SubscribeRequestFilterAccounts {
+            account: vec!["2WLWEuKDgkDUccTpbwYp1GToYktiSB1cXvreHUwiSUVP".to_string()],
+            owner: vec![],
+            filters: vec![],
+        },
+    );
+
+
+    SubscribeRequest {
+        slots: Default::default(),
+        accounts: accounts_subs,
+        transactions: HashMap::new(),
+        entry: Default::default(),
+        blocks: Default::default(),
+        blocks_meta: HashMap::new(),
+        commitment: None,
+        accounts_data_slice: Default::default(),
+        ping: None,
+    }
+}
+
+
