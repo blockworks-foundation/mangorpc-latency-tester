@@ -3,6 +3,14 @@ name = "mangorpc-latency-tester"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "rpc-node-check-alive"
+path = "src/rpcnode_check_alive.rs"
+
+[[bin]]
+name = "slot-latency-tester"
+path = "src/slot_latency_tester.rs"
+
 [dependencies]
 solana-sdk = "1.17.31"
 solana-rpc-client = "1.17.31"
