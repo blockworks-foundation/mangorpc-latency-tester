@@ -36,11 +36,9 @@ async fn main() {
     let rpc_url = format!("https://mango.rpcpool.com/{MAINNET_API_TOKEN}",
                           MAINNET_API_TOKEN = std::env::var("MAINNET_API_TOKEN").unwrap());
     let rpc_url = Url::parse(rpc_url.as_str()).unwrap();
-    let rpc_client = RpcClient::new(rpc_url.to_string());
 
     let grpc_addr = std::env::var("GRPC_ADDR").unwrap();
 
-    let (slots_tx, mut slots_rx) = tokio::sync::mpsc::channel(100);
 
     let timeouts = GrpcConnectionTimeouts {
         connect_timeout: Duration::from_secs(10),
@@ -51,6 +49,8 @@ async fn main() {
 
 
     let config = GrpcSourceConfig::new(grpc_addr.to_string(), None, None, timeouts.clone());
+
+    let (slots_tx, mut slots_rx) = tokio::sync::mpsc::channel(100);
 
     start_geyser_slots_task(config.clone(), slots_tx.clone());
 
@@ -184,5 +184,3 @@ pub fn slots() -> SubscribeRequest {
         ping: None,
     }
 }
-
-x
