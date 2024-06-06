@@ -7,7 +7,6 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use futures_util::FutureExt;
-use gethostname::gethostname;
 use geyser_grpc_connector::{GrpcConnectionTimeouts, GrpcSourceConfig, Message};
 use geyser_grpc_connector::grpc_subscription_autoreconnect_streams::create_geyser_reconnecting_stream;
 use serde_json::json;
