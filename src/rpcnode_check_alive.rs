@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::pin::pin;
 use std::process::{exit, ExitCode};
@@ -30,6 +30,7 @@ use url::Url;
 use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterAccounts, SubscribeRequestFilterSlots, SubscribeUpdate};
 use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
 use anyhow::Context;
+use enum_iterator::Sequence;
 use solana_account_decoder::UiAccountEncoding;
 use solana_rpc_client_api::config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
 use solana_rpc_client_api::filter::{Memcmp, RpcFilterType};
@@ -43,7 +44,7 @@ enum CheckResult {
     Timeout(Check),
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Sequence)]
 enum Check {
     Gpa,
     TokenAccouns,
@@ -122,6 +123,7 @@ async fn main() -> ExitCode {
 
     info!("all tasks started...");
 
+    let mut tasks_success = Vec::new();
     let mut tasks_successful = 0;
     let mut tasks_timeout = 0;
     let mut tasks_failed = 0;
@@ -130,6 +132,7 @@ async fn main() -> ExitCode {
             Ok(CheckResult::Success(check)) => {
                 tasks_successful += 1;
                 info!("one more task completed <{:?}>, {} left", check, all_check_tasks.len());
+                tasks_success.push(check);
             }
             Ok(CheckResult::Timeout(check)) => {
                 tasks_timeout += 1;
@@ -145,13 +148,20 @@ async fn main() -> ExitCode {
 
     assert!(tasks_total > 0, "no results");
 
+
     if tasks_failed + tasks_timeout > 0 {
         warn!("tasks failed ({}) or timed out ({}) of {} total", tasks_failed, tasks_timeout, tasks_total);
+        for check in enum_iterator::all::<Check>() {
+            if !tasks_success.contains(&check) {
+                warn!("!! failed task <{:?}>", check);
+            }
+        }
         return ExitCode::SUCCESS;
     } else {
         info!("all {} tasks completed...", tasks_total);
         return ExitCode::FAILURE;
     }
+
 }
 
 fn add_task(check: Check, task: impl Future<Output = ()> + Send + 'static, all_check_tasks: &mut JoinSet<CheckResult>) {

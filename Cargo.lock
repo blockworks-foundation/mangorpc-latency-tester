@@ -1134,6 +1134,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "enum-iterator"
+version = "2.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c280b9e6b3ae19e152d8e31cf47f18389781e119d4013a2a2bb0180e5facc635"
+dependencies = [
+ "enum-iterator-derive",
+]
+
+[[package]]
 name = "enum-iterator-derive"
 version = "1.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2015,6 +2024,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "config",
+ "enum-iterator 2.1.0",
  "futures-util",
  "geyser-grpc-connector",
  "jsonrpsee-types",
@@ -3556,7 +3566,7 @@ dependencies = [
  "base64 0.21.7",
  "bincode",
  "eager",
- "enum-iterator",
+ "enum-iterator 1.5.0",
  "itertools 0.10.5",
  "libc",
  "log",
