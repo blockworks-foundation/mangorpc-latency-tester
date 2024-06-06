@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::pin;
-use std::process::ExitCode;
+use std::process::{exit, ExitCode};
 use std::str::FromStr;
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 use futures_util::FutureExt;
+use gethostname::gethostname;
 use geyser_grpc_connector::{GrpcConnectionTimeouts, GrpcSourceConfig, Message};
 use geyser_grpc_connector::grpc_subscription_autoreconnect_streams::create_geyser_reconnecting_stream;
 use serde_json::json;
@@ -30,6 +31,7 @@ use url::Url;
 use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterAccounts, SubscribeRequestFilterSlots, SubscribeUpdate};
 use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
 
+
 type Slot = u64;
 
 const TASK_TIMEOUT: Duration = Duration::from_millis(5000);
@@ -50,15 +52,46 @@ enum Check {
     WebsocketAccount,
 }
 
+
+async fn send_webook_discord() {
+    let url = std::env::var("DISCORD_WEBHOOK").unwrap();
+    let client = reqwest::Client::new();
+    let res = client.post(url)
+        .json(&json!({
+            "content": "Hello, World!"
+        }))
+        .send().await;
+    match res {
+        Ok(_) => {
+            info!("webhook sent");
+        }
+        Err(e) => {
+            error!("webhook failed: {:?}", e);
+        }
+    }
+
+}
+
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() -> ExitCode {
     tracing_subscriber::fmt::init();
 
-    let ws_url = format!("wss://mango.rpcpool.com/{MAINNET_API_TOKEN}",
-                         MAINNET_API_TOKEN = std::env::var("MAINNET_API_TOKEN").unwrap());
-    let rpc_url = format!("https://mango.rpcpool.com/{MAINNET_API_TOKEN}",
-                          MAINNET_API_TOKEN = std::env::var("MAINNET_API_TOKEN").unwrap());
+
+    // send_webook_discord().await;
+
+
+    // name of rpc node for logging/discord (e.g. hostname)
+    let rpcnode_label = std::env::var("RPCNODE_LABEL").unwrap();
+
+    // http://...
+    let rpc_addr = std::env::var("RPC_HTTP_ADDR").unwrap();
+
+    // wss://...
+    let ws_addr = std::env::var("RPC_WS_ADDR").unwrap();
+
+    // http://...
     let grpc_addr = std::env::var("GRPC_ADDR").unwrap();
+
     let geyser_grpc_timeouts = GrpcConnectionTimeouts {
         connect_timeout: Duration::from_secs(10),
         request_timeout: Duration::from_secs(10),
@@ -66,7 +99,9 @@ async fn main() -> ExitCode {
         receive_timeout: Duration::from_secs(10),
     };
 
-    let rpc_url = Url::parse(rpc_url.as_str()).unwrap();
+    info!("rpcnode_check_alive against {}: (rpc {}, ws {}, gprc {})", rpcnode_label, rpc_addr, ws_addr, grpc_addr);
+
+    let rpc_url = Url::parse(rpc_addr.as_str()).unwrap();
     let rpc_client = Arc::new(RpcClient::new(rpc_url.to_string()));
 
     let geyser_grpc_config = GrpcSourceConfig::new(grpc_addr.to_string(), None, None, geyser_grpc_timeouts.clone());
@@ -78,7 +113,7 @@ async fn main() -> ExitCode {
     add_task(Check::Gsfa, rpc_get_signatures_for_address(rpc_client.clone()), &mut all_check_tasks);
     add_task(Check::GetAccountInfo, rpc_get_account_info(rpc_client.clone()), &mut all_check_tasks);
 
-    add_task(Check::WebsocketAccount, websocket_account_subscribe(Url::parse(ws_url.as_str()).unwrap()), &mut all_check_tasks);
+    add_task(Check::WebsocketAccount, websocket_account_subscribe(Url::parse(ws_addr.as_str()).unwrap()), &mut all_check_tasks);
 
     add_task(Check::GeyserAllAccounts, create_geyser_all_accounts_task(geyser_grpc_config.clone()), &mut all_check_tasks);
     add_task(Check::GeyserTokenAccount, create_geyser_token_account_task(geyser_grpc_config.clone()), &mut all_check_tasks);

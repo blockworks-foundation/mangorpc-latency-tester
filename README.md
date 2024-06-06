@@ -2,16 +2,15 @@
 
 ## Run from console
 
-Check requirements:
-```bash
-# need to set the MAINNET_API_TOKEN environment variable
-echo $MAINNET_API_TOKEN 
-```
 
 ```bash
-export RUST_LOG=info,rpc_node_check_alive=debug
-export MAINNET_API_TOKEN=...
-export GRPC_ADDR=http://host:10000/
+
+RUST_LOG=info,rpc_node_check_alive=debug
+RPCNODE_LABEL=nodename
+RPC_HTTP_ADDR=https://...
+RPC_WS_ADDR=wss://...
+GRPC_ADDR=http://....:10000/
+DISCORD_WEBHOOK=https://discord.com/api/webhooks/abcedfgh
 
 cargo run --bin rpc-node-check-alive
 ```
