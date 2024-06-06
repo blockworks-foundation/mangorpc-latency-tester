@@ -276,7 +276,7 @@ async fn rpc_get_account_info(rpc_client: Arc<RpcClient>) {
 }
 
 async fn rpc_get_token_accounts_by_owner(rpc_client: Arc<RpcClient>) {
-    let owner_pubkey = Pubkey::from_str("SCbotdTZN5Vu9h4PgSAFoJozrALn2t5qMVdjyBuqu2c").unwrap();
+    let owner_pubkey = Pubkey::from_str("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc").unwrap();
     let mint = Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap();
 
     let token_accounts = rpc_client
