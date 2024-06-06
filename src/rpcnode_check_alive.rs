@@ -29,11 +29,14 @@ use websocket_tungstenite_retry::websocket_stable::{StableWebSocket, WsMessage};
 use url::Url;
 use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterAccounts, SubscribeRequestFilterSlots, SubscribeUpdate};
 use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
-
+use anyhow::Context;
+use solana_account_decoder::UiAccountEncoding;
+use solana_rpc_client_api::config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
+use solana_rpc_client_api::filter::{Memcmp, RpcFilterType};
 
 type Slot = u64;
 
-const TASK_TIMEOUT: Duration = Duration::from_millis(5000);
+const TASK_TIMEOUT: Duration = Duration::from_millis(15000);
 
 enum CheckResult {
     Success(Check),
@@ -228,21 +231,34 @@ async fn create_geyser_token_account_task(config: GrpcSourceConfig) {
 
 async fn rpc_gpa(rpc_client: Arc<RpcClient>)  {
 
-    // TODO choose a smaller program
-    // 4MangoMjqJ2firMokCjjGgoK8d4MXcrgL7XJaL3w6fVg
-    let program_pubkey = Pubkey::from_str("CPLT8dWFQ1VH4ZJkvqSrLLFFPtCcKDm4XJ51t4K4mEiN").unwrap();
+    let program_pubkey = Pubkey::from_str("4MangoMjqJ2firMokCjjGgoK8d4MXcrgL7XJaL3w6fVg").unwrap();
 
-    // tokio::time::sleep(Duration::from_millis(100)).await;
+    let filter = RpcFilterType::Memcmp(Memcmp::new_raw_bytes(30, vec![42]));
+
+    let _config = RpcProgramAccountsConfig {
+        // filters: Some(vec![filter]),
+        filters: None,
+        account_config: RpcAccountInfoConfig {
+            encoding: None,
+            data_slice: None,
+            commitment: None,
+            min_context_slot: None,
+        },
+        with_context: None,
+    };
+
     let program_accounts = rpc_client
         .get_program_accounts(&program_pubkey)
         .await
+        .context("rpc_gpa")
         .unwrap();
+
+    // info!("hex {:02X?}", program_accounts[0].1.data);
 
     debug!("Program accounts: {:?}", program_accounts.len());
     // mango 12400 on mainnet
-    // CPL: 107 on mainnet
 
-    assert!(program_accounts.len() > 100, "program accounts count is too low");
+    assert!(program_accounts.len() > 1000, "program accounts count is too low");
 }
 
 async fn rpc_get_account_info(rpc_client: Arc<RpcClient>) {
@@ -269,6 +285,7 @@ async fn rpc_get_token_accounts_by_owner(rpc_client: Arc<RpcClient>) {
             TokenAccountsFilter::Mint(mint),
         )
         .await
+        .context("rpc_get_token_accounts_by_owner")
         .unwrap();
 
     // 1 account
@@ -290,6 +307,7 @@ async fn rpc_get_signatures_for_address(rpc_client: Arc<RpcClient>) {
     let signatures = rpc_client
         .get_signatures_for_address_with_config(&address, config)
         .await
+        .context("get_signatures_for_address_with_config")
         .unwrap();
 
     // 42
@@ -319,6 +337,7 @@ async fn websocket_account_subscribe(
         Duration::from_secs(3),
     )
         .await
+        .context("new websocket")
         .unwrap();
 
     let mut channel = ws1.subscribe_message_channel();
