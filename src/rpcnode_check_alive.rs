@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::pin;
+use std::process::ExitCode;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::thread::sleep;
@@ -50,7 +51,7 @@ enum Check {
 }
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
-async fn main() {
+async fn main() -> ExitCode {
     tracing_subscriber::fmt::init();
 
     let ws_url = format!("wss://mango.rpcpool.com/{MAINNET_API_TOKEN}",
@@ -109,8 +110,10 @@ async fn main() {
 
     if tasks_failed + tasks_timeout > 0 {
         warn!("tasks failed ({}) or timed out ({}) of {} total", tasks_failed, tasks_timeout, tasks_total);
+        return ExitCode::SUCCESS;
     } else {
         info!("all {} tasks completed...", tasks_total);
+        return ExitCode::FAILURE;
     }
 }
 
@@ -156,6 +159,8 @@ async fn create_geyser_all_accounts_task(config: GrpcSourceConfig) {
             _ => {}
         }
     };
+
+    panic!("failed to receive the requested accounts");
 }
 
 async fn create_geyser_token_account_task(config: GrpcSourceConfig) {
@@ -183,6 +188,8 @@ async fn create_geyser_token_account_task(config: GrpcSourceConfig) {
             _ => {}
         }
     };
+
+    panic!("failed to receive the requested token accounts");
 }
 
 async fn rpc_gpa(rpc_client: Arc<RpcClient>)  {
@@ -201,6 +208,7 @@ async fn rpc_gpa(rpc_client: Arc<RpcClient>)  {
     // mango 12400 on mainnet
     // CPL: 107 on mainnet
 
+    assert!(program_accounts.len() > 100, "program accounts count is too low");
 }
 
 async fn rpc_get_account_info(rpc_client: Arc<RpcClient>) {
@@ -212,6 +220,8 @@ async fn rpc_get_account_info(rpc_client: Arc<RpcClient>) {
         .unwrap();
 
     debug!("Account info: {:?}", account_info);
+
+    assert!(account_info.lamports > 0, "account lamports is zero");
 
 }
 
@@ -229,6 +239,8 @@ async fn rpc_get_token_accounts_by_owner(rpc_client: Arc<RpcClient>) {
 
     // 1 account
     debug!("Token accounts: {:?}", token_accounts.len());
+
+    assert!(token_accounts.len() > 0, "token accounts count is zero");
 }
 
 async fn rpc_get_signatures_for_address(rpc_client: Arc<RpcClient>) {
@@ -247,7 +259,9 @@ async fn rpc_get_signatures_for_address(rpc_client: Arc<RpcClient>) {
         .unwrap();
 
     // 42
-    debug!("Signatures: {:?}", signatures.len());
+    debug!("Signatures for Address {}: {:?}", address, signatures.len());
+
+    assert!(signatures.len() > 10, "signatures count is too low");
 }
 
 
@@ -285,6 +299,8 @@ async fn websocket_account_subscribe(
             return;
         }
     }
+
+    panic!("failed to receive the requested sysvar clock accounts");
 }
 
 
