@@ -23,7 +23,7 @@ use tokio::task::{JoinError, JoinHandle, JoinSet};
 use tokio::time::{Instant, timeout};
 use tokio_stream::{Stream, StreamExt};
 use tokio_stream::wrappers::{BroadcastStream, ReceiverStream};
-use tracing::{debug, info, trace, warn};
+use tracing::{debug, error, info, trace, warn};
 use websocket_tungstenite_retry::websocket_stable::{StableWebSocket, WsMessage};
 use url::Url;
 use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterAccounts, SubscribeRequestFilterSlots, SubscribeUpdate};
@@ -84,21 +84,34 @@ async fn main() {
 
     info!("all tasks started...");
 
+    let mut tasks_successful = 0;
+    let mut tasks_timeout = 0;
+    let mut tasks_failed = 0;
     while let Some(res) = all_check_tasks.join_next().await {
         match res {
             Ok(CheckResult::Success(check)) => {
-                info!("one more Task completed: {:?}, {} left", check, all_check_tasks.len());
+                tasks_successful += 1;
+                info!("one more task completed <{:?}>, {} left", check, all_check_tasks.len());
             }
             Ok(CheckResult::Timeout(check)) => {
-                info!("timeout running Task {:?}", check);
+                tasks_timeout += 1;
+                warn!("timeout running task <{:?}>", check);
             }
             Err(_) => {
-                warn!("Task failed");
+                tasks_failed += 1;
+                warn!("Task execution failed");
             }
         }
     }
+    let tasks_total = tasks_successful + tasks_failed + tasks_timeout;
 
-    info!("all tasks completed...");
+    assert!(tasks_total > 0, "no results");
+
+    if tasks_failed + tasks_timeout > 0 {
+        warn!("tasks failed ({}) or timed out ({}) of {} total", tasks_failed, tasks_timeout, tasks_total);
+    } else {
+        info!("all {} tasks completed...", tasks_total);
+    }
 }
 
 fn add_task(check: Check, task: impl Future<Output = ()> + Send + 'static, all_check_tasks: &mut JoinSet<CheckResult>) {
