@@ -188,9 +188,18 @@ fn create_discord_message(
 
     let hostname_executed = gethostname();
 
+    let content = if success {
+        format!("OK rpc node check for <{}>", rpcnode_label)
+    } else {
+        let userid_groovie = 933275947124273182u128;
+        let role_id_alerts_mangolana = 1100752577307619368u128;
+        let mentions = format!("<@{}> <@&{}>", userid_groovie, role_id_alerts_mangolana);
+        format!("Failed rpc node check for <{}> {}", rpcnode_label, mentions)
+    };
+
     let body = json! {
         {
-            "content": format!("RPC Node Check for <{}>", rpcnode_label),
+            "content": content,
             "description": format!("executed on {}", hostname_executed.to_string_lossy()),
             "username": "RPC Node Check",
             "embeds": [
