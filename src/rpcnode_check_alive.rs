@@ -190,18 +190,19 @@ fn create_discord_message(
 
     let body = json! {
         {
-            "content": "Automatic RPC Node check script notification",
+            "content": format!("RPC Node Check for <{}>", rpcnode_label),
+            "description": format!("executed on {}", hostname_executed.to_string_lossy()),
             "username": "RPC Node Check",
             "embeds": [
                 {
-                    "title": rpcnode_label,
+                    "title": "Check Results",
                     "description": "",
                     "color": status_color,
                     "fields":
                        fields
                     ,
                     "footer": {
-                        "text": format!("by groovie on {}", hostname_executed.to_string_lossy())
+                        "text": format!("github: mangorpc-latency-tester, author: groovie")
                     }
                 }
             ]
