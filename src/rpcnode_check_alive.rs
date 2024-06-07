@@ -34,6 +34,7 @@ use enum_iterator::Sequence;
 use solana_account_decoder::UiAccountEncoding;
 use solana_rpc_client_api::config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
 use solana_rpc_client_api::filter::{Memcmp, RpcFilterType};
+use itertools::Itertools;
 
 type Slot = u64;
 
@@ -81,6 +82,31 @@ async fn main() -> ExitCode {
 
 
     // send_webook_discord().await;
+
+
+    let map_checks_by_name: HashMap<String, Check> =
+    enum_iterator::all::<Check>().map(|check| {
+        (format!("{:?}", check), check)
+    }).collect();
+    info!("map_checks_by_name: {:?}", map_checks_by_name);
+
+    // comma separated
+    let checks_enabled = std::env::var("CHECKS_ENABLED").unwrap();
+    debug!("checks_enabled unparsed: {}", checks_enabled);
+
+    let checks_enabled = checks_enabled.split(",").map(|s| {
+        let s = s.trim();
+
+        match map_checks_by_name.get(s) {
+            Some(check) => check,
+            None => {
+                error!("unknown check: {}", s);
+                exit(1);
+            }
+        }
+    }).collect_vec();
+
+    info!("checks enabled: {:?}", checks_enabled);
 
 
     // name of rpc node for logging/discord (e.g. hostname)
@@ -153,7 +179,7 @@ async fn main() -> ExitCode {
         warn!("tasks failed ({}) or timed out ({}) of {} total", tasks_failed, tasks_timeout, tasks_total);
         for check in enum_iterator::all::<Check>() {
             if !tasks_success.contains(&check) {
-                warn!("!! failed task <{:?}>", check);
+                warn!("!! did not complet task <{:?}>", check);
             }
         }
         return ExitCode::SUCCESS;
