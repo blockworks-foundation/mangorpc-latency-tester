@@ -30,7 +30,7 @@ use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterAcc
 #[derive(Clone, Debug, PartialEq, Sequence)]
 pub enum Check {
     RpcGpa,
-    RpcTokenAccouns,
+    RpcTokenAccounts,
     RpcGsfa,
     RpcGetAccountInfo,
     GeyserAllAccounts,
@@ -48,10 +48,10 @@ pub fn define_checks(checks_enabled: &[Check], all_check_tasks: &mut JoinSet<Che
         let rpc_client = read_rpc_config();
         add_task(Check::RpcGpa, rpc_gpa(rpc_client.clone()), all_check_tasks);
     }
-    if checks_enabled.contains(&Check::RpcTokenAccouns) {
+    if checks_enabled.contains(&Check::RpcTokenAccounts) {
         let rpc_client = read_rpc_config();
         add_task(
-            Check::RpcTokenAccouns,
+            Check::RpcTokenAccounts,
             rpc_get_token_accounts_by_owner(rpc_client.clone()),
             all_check_tasks,
         );
