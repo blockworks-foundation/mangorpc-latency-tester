@@ -99,6 +99,7 @@ fn read_ws_config() -> String {
 
 fn read_geyser_config() -> GrpcSourceConfig {
     let grpc_addr = std::env::var("GRPC_ADDR").unwrap();
+    let grpc_x_token = std::env::var("GRPC_X_TOKEN").ok();
 
     let geyser_grpc_timeouts = GrpcConnectionTimeouts {
         connect_timeout: Duration::from_secs(10),
@@ -109,7 +110,7 @@ fn read_geyser_config() -> GrpcSourceConfig {
 
     GrpcSourceConfig::new(
         grpc_addr.to_string(),
-        None,
+        grpc_x_token,
         None,
         geyser_grpc_timeouts.clone(),
     )
