@@ -35,6 +35,7 @@ anyhow = "1.0.86"
 reqwest = { version = "0.12.4", features = ["json"] }
 enum-iterator = "2.1.0"
 
+gethostname = "0.4.3"
 url = "2.5.0"
 config = "0.14.0"
 itertools = "0.10.5"

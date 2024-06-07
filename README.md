@@ -16,6 +16,8 @@ DISCORD_WEBHOOK=https://discord.com/api/webhooks/abcedfgh
 cargo run --bin rpc-node-check-alive
 ```
 
+* `DISCORD_WEBHOOK` is optional
+
 ## Example output
 ```
 2024-06-05T16:43:44.680699Z  INFO rpc_node_check_alive: all tasks started...
