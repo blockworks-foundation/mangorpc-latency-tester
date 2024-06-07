@@ -2027,6 +2027,7 @@ dependencies = [
  "enum-iterator 2.1.0",
  "futures-util",
  "geyser-grpc-connector",
+ "itertools 0.10.5",
  "jsonrpsee-types",
  "reqwest 0.12.4",
  "serde",
