@@ -20,29 +20,34 @@ cargo run --bin rpc-node-check-alive
 
 ## Example output
 ```
-2024-06-05T16:43:44.680699Z  INFO rpc_node_check_alive: all tasks started...
-2024-06-05T16:43:44.762007Z DEBUG rpc_node_check_alive: Token Account: [133, 162, 175, 53, 141, 6, 151, 253, 237, 187, 239, 60, 193, 47, 24, 215, 105, 236, 196, 248, 185, 35, 88, 113, 130, 143, 249, 116, 208, 21, 69, 1]
-2024-06-05T16:43:44.762129Z DEBUG rpc_node_check_alive: Token Account: [144, 159, 126, 75, 53, 158, 33, 89, 222, 212, 182, 225, 48, 168, 191, 248, 168, 49, 44, 152, 255, 102, 41, 85, 241, 5, 125, 11, 65, 65, 82, 93]
-2024-06-05T16:43:44.762165Z DEBUG rpc_node_check_alive: Token Account: [167, 239, 154, 253, 229, 160, 165, 116, 248, 164, 21, 218, 178, 182, 192, 107, 166, 232, 79, 155, 16, 115, 2, 41, 247, 45, 242, 75, 70, 35, 190, 22]
-2024-06-05T16:43:44.762197Z DEBUG rpc_node_check_alive: Token Account: [209, 244, 21, 189, 121, 222, 117, 43, 207, 20, 61, 45, 200, 78, 145, 134, 65, 181, 122, 46, 107, 127, 19, 103, 225, 109, 25, 129, 243, 224, 150, 55]
-2024-06-05T16:43:44.762334Z  INFO rpc_node_check_alive: one more Task completed: GeyserTokenAccount, 6 left
-2024-06-05T16:43:44.763959Z DEBUG rpc_node_check_alive: Account from geyser: [231, 151, 47, 148, 61, 232, 108, 9, 164, 77, 38, 237, 237, 238, 239, 110, 18, 8, 208, 109, 11, 116, 233, 93, 241, 231, 7, 233, 97, 124, 161, 221]
-2024-06-05T16:43:44.763998Z DEBUG rpc_node_check_alive: Account from geyser: [71, 96, 82, 234, 56, 93, 64, 90, 126, 101, 211, 1, 123, 245, 125, 43, 43, 212, 212, 86, 140, 184, 171, 235, 30, 11, 141, 12, 57, 225, 223, 91]
-2024-06-05T16:43:44.764029Z DEBUG rpc_node_check_alive: Account from geyser: [24, 131, 177, 36, 109, 218, 93, 7, 23, 61, 189, 56, 213, 103, 0, 7, 21, 132, 44, 31, 208, 232, 150, 231, 11, 10, 109, 210, 229, 26, 79, 151]
-2024-06-05T16:43:44.764061Z DEBUG rpc_node_check_alive: Account from geyser: [65, 15, 65, 222, 35, 95, 45, 184, 36, 229, 98, 234, 122, 178, 211, 211, 212, 255, 4, 131, 22, 198, 29, 98, 156, 11, 147, 245, 133, 132, 225, 175]
-2024-06-05T16:43:44.764151Z  INFO rpc_node_check_alive: one more Task completed: GeyserAllAccounts, 5 left
-2024-06-05T16:43:45.843099Z DEBUG rpc_node_check_alive: Account info: Account { lamports: 1141440, data.len: 36, owner: BPFLoaderUpgradeab1e11111111111111111111111, executable: true, rent_epoch: 18446744073709551615, data: 02000000ac038fba657d72b99a76ff3a3a7237b28ba1eade31cc3435710eb16b9e4eac42 }
-2024-06-05T16:43:45.843303Z  INFO rpc_node_check_alive: one more Task completed: GetAccountInfo, 4 left
-2024-06-05T16:43:46.285693Z DEBUG rpc_node_check_alive: Token accounts: 1
-2024-06-05T16:43:46.285881Z  INFO rpc_node_check_alive: one more Task completed: TokenAccouns, 3 left
-2024-06-05T16:43:46.676556Z DEBUG rpc_node_check_alive: Program accounts: 116
-2024-06-05T16:43:46.676792Z  INFO rpc_node_check_alive: one more Task completed: Gpa, 2 left
-2024-06-05T16:43:46.701393Z DEBUG rpc_node_check_alive: SysvarC1ock: "{\"jsonrpc\":\"2.0\",\"method\":\"accountNotification\",\"params\":{\"result\":{\"context\":{\"slot\":270059884},\"value\":{\"lamports\":1169280,\"data\":\"6WGf1TX6rtj94JpajzjiA2YS1pn6Qz1uZwS1rP34vciGmnKcBL9mnLX\",\"owner\":\"Sysvar1111111111111111111111111111111111111\",\"executable\":false,\"rentEpoch\":18446744073709551615,\"space\":40}},\"subscription\":8521781}}"
-2024-06-05T16:43:46.878189Z DEBUG rpc_node_check_alive: Signatures: 42
-2024-06-05T16:43:46.878708Z  INFO rpc_node_check_alive: one more Task completed: Gsfa, 1 left
-2024-06-05T16:43:47.201389Z DEBUG rpc_node_check_alive: SysvarC1ock: "{\"jsonrpc\":\"2.0\",\"method\":\"accountNotification\",\"params\":{\"result\":{\"context\":{\"slot\":270059885},\"value\":{\"lamports\":1169280,\"data\":\"6Z9odf5BPxx9i1PRdxb7saZvDp45hJjSJJUa1Ap8cDB2V3eXdf7thro\",\"owner\":\"Sysvar1111111111111111111111111111111111111\",\"executable\":false,\"rentEpoch\":18446744073709551615,\"space\":40}},\"subscription\":8521781}}"
-2024-06-05T16:43:47.585875Z DEBUG rpc_node_check_alive: SysvarC1ock: "{\"jsonrpc\":\"2.0\",\"method\":\"accountNotification\",\"params\":{\"result\":{\"context\":{\"slot\":270059885},\"value\":{\"lamports\":1169280,\"data\":\"6c2xFrdFw3BAMhxGXvSXb8bQRoL4ydSy2fX89xbCHodnCUg86nuWEeb\",\"owner\":\"Sysvar1111111111111111111111111111111111111\",\"executable\":false,\"rentEpoch\":18446744073709551615,\"space\":40}},\"subscription\":8521781}}"
-2024-06-05T16:43:47.866704Z DEBUG rpc_node_check_alive: SysvarC1ock: "{\"jsonrpc\":\"2.0\",\"method\":\"accountNotification\",\"params\":{\"result\":{\"context\":{\"slot\":270059885},\"value\":{\"lamports\":1169280,\"data\":\"6ev6t4BLU7QB1QX7RtHwJgctdnc4FxAVm2ZgJkNFyQ6Xuk13Z7sdAAs\",\"owner\":\"Sysvar1111111111111111111111111111111111111\",\"executable\":false,\"rentEpoch\":18446744073709551615,\"space\":40}},\"subscription\":8521781}}"
-2024-06-05T16:43:47.867369Z  INFO rpc_node_check_alive: one more Task completed: WebsocketAccount, 0 left
-2024-06-05T16:43:47.867418Z  INFO rpc_node_check_alive: all tasks completed...
+2024-06-07T07:26:48.391467Z DEBUG rpc_node_check_alive: checks_enabled unparsed: Gpa, TokenAccouns, Gsfa, GetAccountInfo, GeyserAllAccounts, GeyserTokenAccount, WebsocketAccount
+2024-06-07T07:26:48.391721Z  INFO rpc_node_check_alive: checks enabled for rpcnode <examplerpc>: [Gpa, TokenAccouns, Gsfa, GetAccountInfo, GeyserAllAccounts, GeyserTokenAccount, WebsocketAccount]
+2024-06-07T07:26:48.401052Z  INFO rpc_node_check_alive: all 7 tasks started...
+2024-06-07T07:26:48.459314Z DEBUG rpc_node_check_alive::checks: Token Account: [10, 48, 151, 253, 112, 168, 12, 111, 238, 19, 187, 124, 207, 230, 113, 108, 198, 113, 188, 77, 26, 238, 240, 13, 119, 247, 220, 130, 21, 24, 229, 187]
+2024-06-07T07:26:48.459412Z DEBUG rpc_node_check_alive::checks: Token Account: [244, 123, 227, 71, 4, 27, 137, 78, 194, 25, 183, 155, 89, 115, 74, 109, 205, 223, 35, 75, 0, 89, 132, 62, 93, 231, 217, 0, 27, 24, 90, 242]
+2024-06-07T07:26:48.459438Z DEBUG rpc_node_check_alive::checks: Token Account: [255, 197, 54, 215, 59, 239, 111, 115, 190, 227, 246, 193, 120, 118, 144, 230, 159, 82, 89, 253, 210, 17, 206, 181, 211, 232, 122, 77, 251, 162, 63, 60]
+2024-06-07T07:26:48.459461Z DEBUG rpc_node_check_alive::checks: Token Account: [199, 239, 190, 245, 79, 77, 73, 240, 252, 152, 19, 232, 55, 12, 214, 66, 109, 82, 9, 24, 131, 116, 199, 100, 161, 207, 147, 16, 18, 103, 250, 216]
+2024-06-07T07:26:48.459539Z  INFO rpc_node_check_alive: one more task completed <GeyserTokenAccount>, 6/7 left
+2024-06-07T07:26:48.471706Z DEBUG rpc_node_check_alive::checks: Account from geyser: [138, 87, 123, 76, 70, 46, 233, 147, 230, 170, 78, 57, 219, 238, 253, 146, 228, 170, 80, 43, 212, 183, 154, 175, 40, 127, 19, 126, 96, 55, 185, 76]
+2024-06-07T07:26:48.471750Z DEBUG rpc_node_check_alive::checks: Account from geyser: [252, 11, 216, 172, 5, 112, 202, 54, 136, 198, 58, 17, 241, 2, 21, 19, 147, 46, 110, 181, 38, 155, 213, 37, 2, 142, 115, 184, 17, 111, 89, 199]
+2024-06-07T07:26:48.471777Z DEBUG rpc_node_check_alive::checks: Account from geyser: [146, 103, 4, 125, 157, 234, 18, 229, 247, 139, 185, 201, 236, 6, 84, 85, 13, 223, 106, 140, 192, 226, 81, 32, 107, 159, 109, 159, 146, 104, 196, 191]
+2024-06-07T07:26:48.471808Z DEBUG rpc_node_check_alive::checks: Account from geyser: [85, 186, 223, 50, 94, 45, 163, 177, 7, 70, 67, 92, 242, 148, 252, 163, 244, 223, 145, 116, 189, 205, 100, 140, 91, 104, 110, 186, 169, 123, 174, 50]
+2024-06-07T07:26:48.471868Z  INFO rpc_node_check_alive: one more task completed <GeyserAllAccounts>, 5/7 left
+2024-06-07T07:26:49.608846Z DEBUG rpc_node_check_alive::checks: Token accounts: 1
+2024-06-07T07:26:49.609727Z  INFO rpc_node_check_alive: one more task completed <TokenAccouns>, 4/7 left
+2024-06-07T07:26:49.610565Z DEBUG rpc_node_check_alive::checks: Account info: Account { lamports: 1141440, data.len: 36, owner: BPFLoaderUpgradeab1e11111111111111111111111, executable: true, rent_epoch: 18446744073709551615, data: 02000000ac038fba657d72b99a76ff3a3a7237b28ba1eade31cc3435710eb16b9e4eac42 }
+2024-06-07T07:26:49.610787Z  INFO rpc_node_check_alive: one more task completed <GetAccountInfo>, 3/7 left
+2024-06-07T07:26:49.614748Z DEBUG rpc_node_check_alive::checks: Signatures for Address SCbotdTZN5Vu9h4PgSAFoJozrALn2t5qMVdjyBuqu2c: 42
+2024-06-07T07:26:49.614955Z  INFO rpc_node_check_alive: one more task completed <Gsfa>, 2/7 left
+2024-06-07T07:26:50.662348Z DEBUG rpc_node_check_alive::checks: SysvarC1ock: "{\"jsonrpc\":\"2.0\",\"method\":\"accountNotification\",\"params\":{\"result\":{\"context\":{\"slot\":270376319},\"value\":{\"lamports\":1169280,\"data\":\"7YJ4bFoS5PBKtui5N6xj6cPJnQsoJoY1Ndgp6JtMsJUpkae9i3p7wPD\",\"owner\":\"Sysvar1111111111111111111111111111111111111\",\"executable\":false,\"rentEpoch\":18446744073709551615,\"space\":40}},\"subscription\":9656896}}"
+2024-06-07T07:26:51.070425Z DEBUG rpc_node_check_alive::checks: SysvarC1ock: "{\"jsonrpc\":\"2.0\",\"method\":\"accountNotification\",\"params\":{\"result\":{\"context\":{\"slot\":270376320},\"value\":{\"lamports\":1169280,\"data\":\"7bBDDTMWcTQLYcGvG4p8pAQnzQ9nb8FY6zjNF6fRYtwaU1fkBBbjUB1\",\"owner\":\"Sysvar1111111111111111111111111111111111111\",\"executable\":false,\"rentEpoch\":18446744073709551615,\"space\":40}},\"subscription\":9656896}}"
+2024-06-07T07:26:51.506507Z DEBUG rpc_node_check_alive::checks: SysvarC1ock: "{\"jsonrpc\":\"2.0\",\"method\":\"accountNotification\",\"params\":{\"result\":{\"context\":{\"slot\":270376322},\"value\":{\"lamports\":1169280,\"data\":\"7e4Mqeub9XdMCJqmA2fYXiSHCPRmsSy4qMmvPtSVEVQLBGzfdWZrPhH\",\"owner\":\"Sysvar1111111111111111111111111111111111111\",\"executable\":false,\"rentEpoch\":18446744073709551615,\"space\":40}},\"subscription\":9656896}}"
+2024-06-07T07:26:52.053034Z DEBUG rpc_node_check_alive::checks: SysvarC1ock: "{\"jsonrpc\":\"2.0\",\"method\":\"accountNotification\",\"params\":{\"result\":{\"context\":{\"slot\":270376322},\"value\":{\"lamports\":1169280,\"data\":\"7gwWTrTfgbrMr1Qc3zWxFGTmQNhm9mgbZipUYgDYv5s5tYKb5qXyKDZ\",\"owner\":\"Sysvar1111111111111111111111111111111111111\",\"executable\":false,\"rentEpoch\":18446744073709551615,\"space\":40}},\"subscription\":9656896}}"
+2024-06-07T07:26:52.054283Z  INFO rpc_node_check_alive: one more task completed <WebsocketAccount>, 1/7 left
+2024-06-07T07:26:54.291176Z DEBUG rpc_node_check_alive::checks: Program accounts: 12462
+2024-06-07T07:26:54.292933Z  INFO rpc_node_check_alive: one more task completed <Gpa>, 0/7 left
+2024-06-07T07:26:54.293023Z  INFO rpc_node_check_alive: sending to discord is disabled
+2024-06-07T07:26:54.293034Z  INFO rpc_node_check_alive: rpcnode <examplerpc> - all 7 tasks completed: [GeyserTokenAccount, GeyserAllAccounts, TokenAccouns, GetAccountInfo, Gsfa, WebsocketAccount, Gpa]
 ```
+
+![example discord message](discord1.png)
