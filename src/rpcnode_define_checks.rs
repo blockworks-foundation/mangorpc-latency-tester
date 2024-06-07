@@ -27,30 +27,30 @@ use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
 use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterAccounts};
 
 pub fn define_checks(checks_enabled: &[Check], all_check_tasks: &mut JoinSet<CheckResult>) {
-    if checks_enabled.contains(&Check::Gpa) {
+    if checks_enabled.contains(&Check::RpcGpa) {
         let rpc_client = read_rpc_config();
-        add_task(Check::Gpa, rpc_gpa(rpc_client.clone()), all_check_tasks);
+        add_task(Check::RpcGpa, rpc_gpa(rpc_client.clone()), all_check_tasks);
     }
-    if checks_enabled.contains(&Check::TokenAccouns) {
+    if checks_enabled.contains(&Check::RpcTokenAccouns) {
         let rpc_client = read_rpc_config();
         add_task(
-            Check::TokenAccouns,
+            Check::RpcTokenAccouns,
             rpc_get_token_accounts_by_owner(rpc_client.clone()),
             all_check_tasks,
         );
     }
-    if checks_enabled.contains(&Check::Gsfa) {
+    if checks_enabled.contains(&Check::RpcGsfa) {
         let rpc_client = read_rpc_config();
         add_task(
-            Check::Gsfa,
+            Check::RpcGsfa,
             rpc_get_signatures_for_address(rpc_client.clone()),
             all_check_tasks,
         );
     }
-    if checks_enabled.contains(&Check::GetAccountInfo) {
+    if checks_enabled.contains(&Check::RpcGetAccountInfo) {
         let rpc_client = read_rpc_config();
         add_task(
-            Check::GetAccountInfo,
+            Check::RpcGetAccountInfo,
             rpc_get_account_info(rpc_client.clone()),
             all_check_tasks,
         );

@@ -19,10 +19,10 @@ enum CheckResult {
 
 #[derive(Clone, Debug, PartialEq, Sequence)]
 enum Check {
-    Gpa,
-    TokenAccouns,
-    Gsfa,
-    GetAccountInfo,
+    RpcGpa,
+    RpcTokenAccouns,
+    RpcGsfa,
+    RpcGetAccountInfo,
     GeyserAllAccounts,
     GeyserTokenAccount,
     WebsocketAccount,

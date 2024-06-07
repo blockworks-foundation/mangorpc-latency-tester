@@ -7,7 +7,7 @@
 
 RUST_LOG=info,rpc_node_check_alive=debug
 RPCNODE_LABEL=nodename
-CHECKS_ENABLED=Gpa,TokenAccouns,Gsfa,GetAccountInfo,GeyserAllAccounts,GeyserTokenAccount,WebsocketAccount
+CHECKS_ENABLED=RpcGpa,RpcTokenAccouns,RpcGsfa,RpcGetAccountInfo,GeyserAllAccounts,GeyserTokenAccount,WebsocketAccount
 RPC_HTTP_ADDR=https://...
 RPC_WS_ADDR=wss://...
 GRPC_ADDR=http://....:10000/
