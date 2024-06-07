@@ -1,5 +1,6 @@
-use crate::{Check, CheckResult, TASK_TIMEOUT};
+use crate::TASK_TIMEOUT;
 use anyhow::Context;
+use enum_iterator::Sequence;
 use futures_util::{FutureExt, StreamExt};
 use geyser_grpc_connector::grpc_subscription_autoreconnect_streams::create_geyser_reconnecting_stream;
 use geyser_grpc_connector::{GrpcConnectionTimeouts, GrpcSourceConfig, Message};
@@ -25,6 +26,22 @@ use url::Url;
 use websocket_tungstenite_retry::websocket_stable::{StableWebSocket, WsMessage};
 use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
 use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterAccounts};
+
+#[derive(Clone, Debug, PartialEq, Sequence)]
+pub enum Check {
+    RpcGpa,
+    RpcTokenAccouns,
+    RpcGsfa,
+    RpcGetAccountInfo,
+    GeyserAllAccounts,
+    GeyserTokenAccount,
+    WebsocketAccount,
+}
+
+pub enum CheckResult {
+    Success(Check),
+    Timeout(Check),
+}
 
 pub fn define_checks(checks_enabled: &[Check], all_check_tasks: &mut JoinSet<CheckResult>) {
     if checks_enabled.contains(&Check::RpcGpa) {

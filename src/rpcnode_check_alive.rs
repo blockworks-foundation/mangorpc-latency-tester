@@ -1,8 +1,9 @@
 mod rpcnode_define_checks;
 
-use enum_iterator::Sequence;
 use gethostname::gethostname;
 use itertools::Itertools;
+use rpcnode_define_checks::Check;
+use rpcnode_define_checks::CheckResult;
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::process::{exit, ExitCode};
@@ -11,22 +12,6 @@ use tokio::task::JoinSet;
 use tracing::{debug, error, info, warn};
 
 const TASK_TIMEOUT: Duration = Duration::from_millis(15000);
-
-enum CheckResult {
-    Success(Check),
-    Timeout(Check),
-}
-
-#[derive(Clone, Debug, PartialEq, Sequence)]
-enum Check {
-    RpcGpa,
-    RpcTokenAccouns,
-    RpcGsfa,
-    RpcGetAccountInfo,
-    GeyserAllAccounts,
-    GeyserTokenAccount,
-    WebsocketAccount,
-}
 
 async fn send_webook_discord(discord_body: Value) {
     let Ok(url) = std::env::var("DISCORD_WEBHOOK") else {
