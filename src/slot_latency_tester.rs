@@ -1,33 +1,25 @@
+use anyhow::Result;
 use geyser_grpc_connector::grpc_subscription_autoreconnect_streams::create_geyser_reconnecting_stream;
 use geyser_grpc_connector::{GrpcConnectionTimeouts, GrpcSourceConfig, Message};
 use serde_json::json;
-use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_rpc_client::rpc_client::GetConfirmedSignaturesForAddress2Config;
-use solana_rpc_client_api::request::TokenAccountsFilter;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client_api::response::SlotInfo;
 use solana_sdk::commitment_config::CommitmentConfig;
-use solana_sdk::pubkey::Pubkey;
 use std::collections::HashMap;
 use std::pin::pin;
-use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
-use tokio::select;
-use tokio::sync::mpsc::error::SendError;
 use tokio::time::Instant;
 use tokio_stream::StreamExt;
 use tracing::info;
 use url::Url;
 use websocket_tungstenite_retry::websocket_stable::{StableWebSocket, WsMessage};
 use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
-use yellowstone_grpc_proto::geyser::{
-    SubscribeRequest, SubscribeRequestFilterAccounts, SubscribeRequestFilterSlots, SubscribeUpdate,
-};
+use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterSlots};
 
 type Slot = u64;
 
-#[tokio::main(flavor = "multi_thread", worker_threads = 16)]
-async fn main() {
+pub async fn measure_slot_latency() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     let ws_url1 = format!("wss://api.mainnet-beta.solana.com");
@@ -76,6 +68,8 @@ async fn main() {
     }
 
     sleep(Duration::from_secs(15));
+
+    Ok(())
 }
 
 async fn rpc_getslot_source(rpc_url: Url, mpsc_downstream: tokio::sync::mpsc::Sender<Slot>) {

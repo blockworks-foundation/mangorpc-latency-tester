@@ -1,4 +1,4 @@
-use crate::TASK_TIMEOUT;
+use crate::rpcnode_check_alive::TASK_TIMEOUT;
 use anyhow::Context;
 use enum_iterator::Sequence;
 use futures_util::{FutureExt, StreamExt};
@@ -6,8 +6,9 @@ use geyser_grpc_connector::grpc_subscription_autoreconnect_streams::create_geyse
 use geyser_grpc_connector::{GrpcConnectionTimeouts, GrpcSourceConfig, Message};
 use serde_json::json;
 use solana_account_decoder::parse_token::spl_token_ids;
-use solana_rpc_client::nonblocking::rpc_client::RpcClient;
-use solana_rpc_client::rpc_client::GetConfirmedSignaturesForAddress2Config;
+use solana_client::{
+    nonblocking::rpc_client::RpcClient, rpc_client::GetConfirmedSignaturesForAddress2Config,
+};
 use solana_rpc_client_api::config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
 use solana_rpc_client_api::filter::{Memcmp, RpcFilterType};
 use solana_rpc_client_api::request::TokenAccountsFilter;
@@ -36,6 +37,37 @@ pub enum Check {
     GeyserAllAccounts,
     GeyserTokenAccount,
     WebsocketAccount,
+}
+
+impl TryFrom<String> for Check {
+    type Error = &'static str;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        match value.as_str() {
+            "RpcGpa" => Ok(Check::RpcGpa),
+            "RpcTokenAccounts" => Ok(Check::RpcTokenAccounts),
+            "RpcGsfa" => Ok(Check::RpcGsfa),
+            "RpcGetAccountInfo" => Ok(Check::RpcGetAccountInfo),
+            "GeyserAllAccounts" => Ok(Check::GeyserAllAccounts),
+            "GeyserTokenAccount" => Ok(Check::GeyserTokenAccount),
+            "WebsocketAccount" => Ok(Check::WebsocketAccount),
+            _ => Err("Invalid value for Check"),
+        }
+    }
+}
+
+impl From<Check> for String {
+    fn from(check: Check) -> Self {
+        match check {
+            Check::RpcGpa => String::from("RpcGpa"),
+            Check::RpcTokenAccounts => String::from("RpcTokenAccounts"),
+            Check::RpcGsfa => String::from("RpcGsfa"),
+            Check::RpcGetAccountInfo => String::from("RpcGetAccountInfo"),
+            Check::GeyserAllAccounts => String::from("GeyserAllAccounts"),
+            Check::GeyserTokenAccount => String::from("GeyserTokenAccount"),
+            Check::WebsocketAccount => String::from("WebsocketAccount"),
+        }
+    }
 }
 
 pub enum CheckResult {
