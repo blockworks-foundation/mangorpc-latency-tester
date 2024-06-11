@@ -32,7 +32,15 @@ configuration can be provided by a `config.toml` file, a `.env` file, or by manu
 see `config.example.toml` and/or `.env.example` for usage.
 
 ```bash
-cargo run measure-send-transaction -- --help
+cargo run measure-send-transaction
+```
+
+### watch measure tx mined speeds
+
+the same as above but will do the action every n seconds
+
+```bash
+cargo run watch-measure-send-transaction -- --watch-interval 600
 ```
 
 ## Example output
@@ -69,3 +77,6 @@ cargo run measure-send-transaction -- --help
 ```
 
 ![example discord message](discord1.png)
+
+## TODOs
+- notify to discord

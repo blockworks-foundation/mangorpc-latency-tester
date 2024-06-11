@@ -16,6 +16,7 @@ pub struct ParsedConfig {
 pub struct MeasureTxsConfig {
     pub pubsub_url: String,
     pub rpc_url: String,
+    pub helius_url: String,
     pub urls_by_label: HashMap<String, String>,
     pub user_key: String,
 }
@@ -62,6 +63,7 @@ pub fn try_parse_toml() -> Result<ParsedConfig> {
 pub fn try_parse_env() -> Result<ParsedConfig> {
     let pubsub_url = env::var("PUBSUB_URL")?;
     let rpc_url = env::var("RPC_URL")?;
+    let helius_url = env::var("HELIUS_URL")?;
     let user_key = env::var("USER_KEY")?;
     let urls_by_label_labels = env::var("URLS_BY_LABEL_LABELS")?;
     let urls_by_label_labels: Vec<&str> = urls_by_label_labels.split(",").collect();
@@ -80,6 +82,7 @@ pub fn try_parse_env() -> Result<ParsedConfig> {
         measure_txs: MeasureTxsConfig {
             pubsub_url,
             rpc_url,
+            helius_url,
             user_key: user_key.clone(),
             urls_by_label,
         },

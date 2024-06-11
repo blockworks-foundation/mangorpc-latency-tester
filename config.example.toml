@@ -2,6 +2,7 @@
 user_key = "1,2,3,4,5..."
 pubsub_url="wss://<url>"
 rpc_url="https://<url>"
+helius_url = "https://<url>"
 
 [measure_txs.urls_by_label]
 helius = "<helius-url>"
