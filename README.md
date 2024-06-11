@@ -1,10 +1,8 @@
-
-
 ## Run from console
 
+### check alive
 
 ```bash
-
 RUST_LOG=info,rpc_node_check_alive=debug
 RPCNODE_LABEL=nodename
 CHECKS_ENABLED=RpcGpa,RpcTokenAccouns,RpcGsfa,RpcGetAccountInfo,GeyserAllAccounts,GeyserTokenAccount,WebsocketAccount
@@ -14,12 +12,31 @@ GRPC_ADDR=http://....:10000/
 GRPC_X_TOKEN=...
 DISCORD_WEBHOOK=https://discord.com/api/webhooks/abcedfgh
 
-cargo run --bin rpc-node-check-alive
+cargo run check-alive
 ```
 
-* `DISCORD_WEBHOOK` is optional
+- `DISCORD_WEBHOOK` is optional
+
+### measure slot latency
+
+TODO: document usage
+
+```bash
+cargo run measure-slot-latency -- --help
+```
+
+### measure tx mined speeds
+
+configuration can be provided by a `config.toml` file, a `.env` file, or by manually giving env args.
+
+see `config.example.toml` and/or `.env.example` for usage.
+
+```bash
+cargo run measure-send-transaction -- --help
+```
 
 ## Example output
+
 ```
 2024-06-07T07:26:48.391467Z DEBUG rpc_node_check_alive: checks_enabled unparsed: Gpa, TokenAccouns, Gsfa, GetAccountInfo, GeyserAllAccounts, GeyserTokenAccount, WebsocketAccount
 2024-06-07T07:26:48.391721Z  INFO rpc_node_check_alive: checks enabled for rpcnode <examplerpc>: [Gpa, TokenAccouns, Gsfa, GetAccountInfo, GeyserAllAccounts, GeyserTokenAccount, WebsocketAccount]
