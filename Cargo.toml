@@ -35,3 +35,5 @@ serde_derive = "1.0.203"
 clap = { version = "4.5.7", features = ["derive"] }
 solana-program = "1.17.31"
 solana-transaction-status = "1.17.31"
+once_cell = "1.19.0"
+chrono = "0.4.38"

@@ -2439,6 +2439,7 @@ name = "mangorpc-latency-tester"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "chrono",
  "clap 4.5.7",
  "config",
  "dirs",
@@ -2450,6 +2451,7 @@ dependencies = [
  "geyser-grpc-connector",
  "itertools 0.10.5",
  "jsonrpsee-types",
+ "once_cell",
  "reqwest 0.12.4",
  "serde",
  "serde_derive",

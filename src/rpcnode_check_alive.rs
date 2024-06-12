@@ -1,26 +1,14 @@
-use crate::rpcnode_define_checks::{define_checks, Check, CheckResult};
+use crate::{
+    discord::{create_check_alive_discord_message, send_webook_discord},
+    rpcnode_define_checks::{define_checks, Check, CheckResult},
+};
 use anyhow::{bail, Result};
-use gethostname::gethostname;
 use itertools::Itertools;
-use serde_json::{json, Value};
 use std::{collections::HashMap, env, process::exit, time::Duration};
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, warn};
 
 pub const TASK_TIMEOUT: Duration = Duration::from_millis(15_000);
-
-async fn send_webook_discord(url: String, discord_body: Value) {
-    let client = reqwest::Client::new();
-    let res = client.post(url).json(&discord_body).send().await;
-    match res {
-        Ok(_) => {
-            info!("webhook sent");
-        }
-        Err(e) => {
-            error!("webhook failed: {:?}", e);
-        }
-    }
-}
 
 pub async fn check(
     discord_webhook: Option<String>,
@@ -110,7 +98,7 @@ pub async fn check(
 
     assert!(tasks_total > 0, "no results");
 
-    let discord_body = create_discord_message(
+    let discord_body = create_check_alive_discord_message(
         &rpcnode_label,
         checks_enabled,
         &mut tasks_success,
@@ -149,73 +137,4 @@ pub async fn check(
                 .join(", ")
         );
     }
-}
-
-fn create_discord_message(
-    rpcnode_label: &str,
-    checks_enabled: Vec<Check>,
-    tasks_success: &mut [Check],
-    tasks_timedout: Vec<Check>,
-    success: bool,
-) -> Value {
-    let result_per_check = enum_iterator::all::<Check>()
-        .map(|check| {
-            let name = format!("{:?}", check);
-            let disabled = !checks_enabled.contains(&check);
-            let timedout = tasks_timedout.contains(&check);
-            let success = tasks_success.contains(&check);
-            let value = if disabled {
-                "disabled"
-            } else if timedout {
-                "timed out"
-            } else if success {
-                "OK"
-            } else {
-                "failed"
-            };
-            json! {
-                {
-                    "name": name,
-                    "value": value
-                }
-            }
-        })
-        .collect_vec();
-
-    let fields = result_per_check;
-
-    let status_color = if success { 0x00FF00 } else { 0xFC4100 };
-
-    let hostname_executed = gethostname();
-
-    let content = if success {
-        format!("OK rpc node check for <{}>", rpcnode_label)
-    } else {
-        let userid_groovie = 933275947124273182u128;
-        let role_id_alerts_mangolana = 1100752577307619368u128;
-        let mentions = format!("<@{}> <@&{}>", userid_groovie, role_id_alerts_mangolana);
-        format!("Failed rpc node check for <{}> {}", rpcnode_label, mentions)
-    };
-
-    let body = json! {
-        {
-            "content": content,
-            "description": format!("executed on {}", hostname_executed.to_string_lossy()),
-            "username": "RPC Node Check",
-            "embeds": [
-                {
-                    "title": "Check Results",
-                    "description": "",
-                    "color": status_color,
-                    "fields":
-                       fields
-                    ,
-                    "footer": {
-                        "text": format!("github: mangorpc-latency-tester, author: groovie")
-                    }
-                }
-            ]
-        }
-    };
-    body
 }

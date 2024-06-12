@@ -7,9 +7,17 @@ use std::iter::zip;
 use std::{collections::HashMap, env};
 use tracing::error;
 
+use crate::discord::DISCORD_WEBHOOK_URL;
+
 pub struct ParsedConfig {
+    pub general: GeneralConfig,
     pub measure_txs: MeasureTxsConfig,
     pub user: Keypair,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GeneralConfig {
+    pub discord_webhook: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -23,6 +31,7 @@ pub struct MeasureTxsConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct Config {
+    pub general: GeneralConfig,
     pub measure_txs: MeasureTxsConfig,
 }
 
@@ -53,6 +62,7 @@ pub fn try_parse_toml() -> Result<ParsedConfig> {
     let config: Config = toml::from_str(&config_path)?;
     let user = parse_user_key(config.measure_txs.user_key.clone())?;
     let parsed_config = ParsedConfig {
+        general: config.general,
         measure_txs: config.measure_txs,
         user,
     };
@@ -61,6 +71,7 @@ pub fn try_parse_toml() -> Result<ParsedConfig> {
 }
 
 pub fn try_parse_env() -> Result<ParsedConfig> {
+    let discord_webhook = env::var("DISCORD_WEBHOOK").ok();
     let pubsub_url = env::var("PUBSUB_URL")?;
     let rpc_url = env::var("RPC_URL")?;
     let helius_url = env::var("HELIUS_URL")?;
@@ -79,6 +90,7 @@ pub fn try_parse_env() -> Result<ParsedConfig> {
     }
 
     Ok(ParsedConfig {
+        general: GeneralConfig { discord_webhook },
         measure_txs: MeasureTxsConfig {
             pubsub_url,
             rpc_url,
@@ -95,9 +107,17 @@ pub fn setup() -> Result<ParsedConfig> {
 
     setup_logging();
 
-    if let Ok(config) = try_parse_toml() {
-        return Ok(config);
+    let config = if let Ok(config) = try_parse_toml() {
+        config
+    } else {
+        try_parse_env()?
+    };
+
+    if let Some(ref discord_webhook) = config.general.discord_webhook {
+        DISCORD_WEBHOOK_URL
+            .set(discord_webhook.clone())
+            .expect("DISCORD_WEBHOOK_URL previously unset");
     }
 
-    try_parse_env()
+    return Ok(config);
 }

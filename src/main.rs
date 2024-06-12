@@ -1,4 +1,5 @@
 pub mod config;
+pub mod discord;
 pub mod measure_txs;
 pub mod rpcnode_check_alive;
 pub mod rpcnode_define_checks;
@@ -9,7 +10,6 @@ use anyhow::Result;
 use clap::{Args, Parser, Subcommand};
 use config::MeasureTxsConfig;
 use config::ParsedConfig;
-use measure_txs::measure_txs;
 use measure_txs::watch_measure_txs;
 use rpcnode_check_alive::check;
 use slot_latency_tester::measure_slot_latency;
@@ -47,9 +47,7 @@ enum Commands {
     CheckAlive(CheckAlive),
     #[clap(aliases = &["l"], about = "measure slot latency between different nodes")]
     MeasureSlotLatency,
-    #[clap(aliases = &["t"], about = "measure tx submission times to different nodes")]
-    MeasureSendTransaction,
-    #[clap(aliases = &["w"], about = "measure tx submission times to different nodes every n seconds")]
+    #[clap(aliases = &["wt"], about = "measure tx submission times to different nodes every n seconds")]
     WatchMeasureSendTransaction(WatchMeasureSendTransaction),
 }
 
@@ -65,6 +63,7 @@ async fn main() -> Result<()> {
                 ..
             },
         user,
+        .. // general is set globally using OnceCell
     } = config::setup()?;
     let cli = Cli::parse();
     match cli.command {
@@ -78,9 +77,6 @@ async fn main() -> Result<()> {
                 Ok(())
             }
             Commands::MeasureSlotLatency => measure_slot_latency().await,
-            Commands::MeasureSendTransaction => {
-                measure_txs(user, pubsub_url, rpc_url, helius_url, urls_by_label).await
-            }
             Commands::WatchMeasureSendTransaction(WatchMeasureSendTransaction {
                 watch_interval_seconds,
             }) => {

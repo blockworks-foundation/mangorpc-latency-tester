@@ -1,5 +1,6 @@
+use crate::discord::{notify_slot_warning, notify_tx_measurement};
 use anyhow::{bail, Result};
-use futures_util::future::join_all;
+use futures_util::future::{join, join_all};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use solana_client::{
@@ -20,6 +21,7 @@ use solana_transaction_status::UiTransactionEncoding;
 use std::{
     collections::HashMap,
     iter::zip,
+    ops::AddAssign,
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc,
@@ -29,17 +31,31 @@ use std::{
 use tokio::{
     sync::Notify,
     task::JoinHandle,
-    time::{sleep, timeout},
+    time::{self, sleep, timeout},
 };
 use tokio_stream::StreamExt;
 use tracing::{debug, error, info, warn};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TxSendResult {
     pub label: String,
     pub signature: Signature,
     pub slot_sent: u64,
     pub slot_confirmed: u64,
+}
+
+#[derive(Debug, Clone)]
+pub struct TxSendError {
+    pub label: String,
+    pub error: String,
+}
+
+pub struct WatchTxResult {
+    pub label: String,
+    pub result: Option<TxSendResult>,
+    pub error: Option<String>,
+    pub lifetime_avg: u64,
+    pub lifetime_fails: u64,
 }
 
 #[derive(Serialize)]
@@ -185,80 +201,6 @@ async fn send_and_confirm_self_transfer_tx(
     })
 }
 
-pub async fn measure_txs(
-    user: Keypair,
-    pubsub_url: String,
-    rpc_url: String,
-    helius_url: String,
-    urls_by_label: HashMap<String, String>,
-) -> Result<()> {
-    info!("measuring txs...");
-    let user = Arc::new(user);
-    let atomic_slot = AtomicU64::new(0);
-    let atomic_slot = Arc::new(atomic_slot);
-    let slot_notifier = Arc::new(Notify::new());
-
-    let a_slot = Arc::clone(&atomic_slot);
-    let s_notifier = Arc::clone(&slot_notifier);
-    let _handle = watch_slots_retry(pubsub_url, a_slot, s_notifier);
-
-    info!("waiting for first slot...");
-    slot_notifier.notified().await;
-
-    let mut clients_by_label = HashMap::<String, Arc<RpcClient>>::new();
-    for (label, url) in urls_by_label.into_iter() {
-        let rpc_client = RpcClient::new(url);
-        clients_by_label.insert(label, Arc::new(rpc_client));
-    }
-
-    let rpc_client = RpcClient::new(rpc_url);
-    let recent_blockhash = rpc_client.get_latest_blockhash().await?;
-    info!("got recent_blockhash: {}", recent_blockhash);
-
-    let priority_fee = get_priority_fee_estimate(&helius_url).await?;
-    info!("using priority fee: {}", priority_fee);
-
-    let mut sig_futs = Vec::new();
-    for (i, (label, client)) in clients_by_label.iter().enumerate() {
-        let label = label.clone();
-        let rpc_client = Arc::clone(client);
-        let user = Arc::clone(&user);
-        let a_slot = Arc::clone(&atomic_slot);
-        let fut = send_and_confirm_self_transfer_tx(
-            user,
-            a_slot,
-            label,
-            rpc_client,
-            recent_blockhash,
-            priority_fee,
-            i as u64,
-        );
-        sig_futs.push(fut);
-    }
-
-    let results = join_all(sig_futs).await;
-    for ((label, _), r) in zip(clients_by_label, results) {
-        if let Ok(TxSendResult {
-            label,
-            signature,
-            slot_sent,
-            slot_confirmed,
-        }) = r
-        {
-            info!("label: {}", label);
-            info!("txSig: https://solscan.io/tx/{}", signature);
-            info!("slot_sent: {}", slot_sent);
-            info!("slot_confirmed: {}", slot_confirmed);
-            info!("slot_diff: {}", slot_confirmed - slot_sent);
-        } else {
-            error!("label: {}", label);
-            error!("error: {:?}", r);
-        }
-    }
-
-    Ok(())
-}
-
 pub async fn watch_measure_txs(
     user: Keypair,
     pubsub_url: String,
@@ -288,11 +230,18 @@ pub async fn watch_measure_txs(
 
     let rpc_client = RpcClient::new(rpc_url);
 
+    let mut interval = time::interval(Duration::from_secs(watch_interval_seconds));
+    let mut slot_diffs_by_label: HashMap<String, Vec<u64>> = HashMap::new();
+    let mut fails_by_label: HashMap<String, u64> = HashMap::new();
     loop {
-        let recent_blockhash = rpc_client.get_latest_blockhash().await?;
-        info!("got recent_blockhash: {}", recent_blockhash);
+        interval.tick().await;
+        let rb_fut = rpc_client.get_latest_blockhash();
+        let pf_fut = get_priority_fee_estimate(&helius_url);
+        let (recent_blockhash, priority_fee) = join(rb_fut, pf_fut).await;
 
-        let priority_fee = get_priority_fee_estimate(&helius_url).await?;
+        let recent_blockhash = recent_blockhash?;
+        info!("got recent_blockhash: {}", recent_blockhash);
+        let priority_fee = priority_fee?;
         info!("using priority fee: {}", priority_fee);
 
         let mut sig_futs = Vec::new();
@@ -315,25 +264,74 @@ pub async fn watch_measure_txs(
         }
 
         let results = join_all(sig_futs).await;
-        for ((label, _), r) in zip(c_by_l, results) {
-            if let Ok(TxSendResult {
-                label,
-                signature,
-                slot_sent,
-                slot_confirmed,
-            }) = r
-            {
-                info!("label: {}", label);
-                info!("txSig: https://solscan.io/tx/{}", signature);
-                info!("slot_sent: {}", slot_sent);
-                info!("slot_confirmed: {}", slot_confirmed);
-                info!("slot_diff: {}", slot_confirmed - slot_sent);
-            } else {
-                error!("label: {}", label);
-                error!("error: {:?}", r);
+        let mut notify_results: Vec<WatchTxResult> = Vec::new();
+        for ((label, _), r) in zip(clients_by_label.clone(), results) {
+            match r {
+                Ok(tx_result) => {
+                    let TxSendResult {
+                        label,
+                        signature,
+                        slot_sent,
+                        slot_confirmed,
+                    } = tx_result.clone();
+                    if slot_sent > slot_confirmed {
+                        warn!(
+                            "slot_sent: {} > slot_confirmed: {}",
+                            slot_sent, slot_confirmed
+                        );
+                        notify_slot_warning(slot_sent, slot_confirmed).await;
+                    }
+                    let slot_diff = slot_confirmed.saturating_sub(slot_sent);
+                    let slot_diffs = slot_diffs_by_label.entry(label.clone()).or_default();
+                    slot_diffs.push(slot_diff);
+
+                    let (sum, count) = slot_diffs
+                        .iter()
+                        .fold((0, 0), |(sum, count), diff| (sum + diff, count + 1));
+
+                    let lifetime_avg = if count > 0 { sum / count } else { u64::MAX };
+                    let lifetime_fails = fails_by_label.entry(label.clone()).or_insert(0).clone();
+
+                    notify_results.push(WatchTxResult {
+                        label: label.clone(),
+                        result: Some(tx_result),
+                        error: None,
+                        lifetime_avg,
+                        lifetime_fails,
+                    });
+                    info!("label: {}", label);
+                    info!("txSig: https://solscan.io/tx/{}", signature);
+                    info!("slot_sent: {}", slot_sent);
+                    info!("slot_confirmed: {}", slot_confirmed);
+                    info!("slot_diff: {}", slot_diff);
+                }
+                Err(e) => {
+                    fails_by_label
+                        .entry(label.clone())
+                        .or_default()
+                        .add_assign(1);
+                    let slot_diffs = slot_diffs_by_label.entry(label.clone()).or_default();
+                    let (sum, count) = slot_diffs
+                        .iter()
+                        .fold((0, 0), |(sum, count), diff| (sum + diff, count + 1));
+
+                    let lifetime_avg = if count > 0 { sum / count } else { u64::MAX };
+                    let lifetime_fails = fails_by_label.entry(label.clone()).or_insert(0).clone();
+
+                    notify_results.push(WatchTxResult {
+                        label: label.clone(),
+                        result: None,
+                        error: Some(e.to_string()),
+                        lifetime_avg,
+                        lifetime_fails,
+                    });
+                    error!("label: {}", label);
+                    error!("error: {:?}", e);
+                }
             }
         }
 
-        sleep(Duration::from_secs(watch_interval_seconds)).await;
+        notify_results.sort_by_key(|k| k.lifetime_avg);
+        notify_tx_measurement(&notify_results).await;
     }
 }

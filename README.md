@@ -25,16 +25,6 @@ TODO: document usage
 cargo run measure-slot-latency -- --help
 ```
 
-### measure tx mined speeds
-
-configuration can be provided by a `config.toml` file, a `.env` file, or by manually giving env args.
-
-see `config.example.toml` and/or `.env.example` for usage.
-
-```bash
-cargo run measure-send-transaction
-```
-
 ### watch measure tx mined speeds
 
 the same as above but will do the action every n seconds
@@ -77,6 +67,3 @@ cargo run watch-measure-send-transaction -- --watch-interval 600
 ```
 
 ![example discord message](discord1.png)
-
-## TODOs
-- notify to discord

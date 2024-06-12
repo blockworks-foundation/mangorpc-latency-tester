@@ -1,6 +1,9 @@
+[general]
+discord_webhook = "https://discord.com/api/webhooks/<chan>/<key>"
+
 [measure_txs]
 user_key = "1,2,3,4,5..."
-pubsub_url="wss://<url>"
+pubsub_url="wss://<>"
 rpc_url="https://<url>"
 helius_url = "https://<url>"
 
