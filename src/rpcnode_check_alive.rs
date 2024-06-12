@@ -133,7 +133,7 @@ pub async fn check(
             "failed to complete all checks: {:?}",
             incomplete_checks
                 .into_iter()
-                .map(|c| Into::<String>::into(c))
+                .map(Into::<String>::into)
                 .join(", ")
         );
     }

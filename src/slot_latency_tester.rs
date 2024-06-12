@@ -22,7 +22,7 @@ type Slot = u64;
 pub async fn measure_slot_latency() -> Result<()> {
     tracing_subscriber::fmt::init();
 
-    let ws_url1 = format!("wss://api.mainnet-beta.solana.com");
+    let ws_url1 = String::from("wss://api.mainnet-beta.solana.com");
     let ws_url2 = format!(
         "wss://mango.rpcpool.com/{MAINNET_API_TOKEN}",
         MAINNET_API_TOKEN = std::env::var("MAINNET_API_TOKEN").unwrap()

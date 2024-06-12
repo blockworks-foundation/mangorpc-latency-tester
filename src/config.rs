@@ -77,9 +77,9 @@ pub fn try_parse_env() -> Result<ParsedConfig> {
     let helius_url = env::var("HELIUS_URL")?;
     let user_key = env::var("USER_KEY")?;
     let urls_by_label_labels = env::var("URLS_BY_LABEL_LABELS")?;
-    let urls_by_label_labels: Vec<&str> = urls_by_label_labels.split(",").collect();
+    let urls_by_label_labels: Vec<&str> = urls_by_label_labels.split(',').collect();
     let urls_by_label_urls = env::var("URLS_BY_LABEL_URLS")?;
-    let urls_by_label_urls: Vec<&str> = urls_by_label_urls.split(",").collect();
+    let urls_by_label_urls: Vec<&str> = urls_by_label_urls.split(',').collect();
     if urls_by_label_urls.len() != urls_by_label_labels.len() {
         bail!("urls_by_label_urls len != urls_by_label_labels len");
     }
@@ -119,5 +119,5 @@ pub fn setup() -> Result<ParsedConfig> {
             .expect("DISCORD_WEBHOOK_URL previously unset");
     }
 
-    return Ok(config);
+    Ok(config)
 }

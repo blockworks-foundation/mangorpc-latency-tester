@@ -143,7 +143,7 @@ pub fn watch_slots_retry(
     atomic_slot: Arc<AtomicU64>,
     slot_notifier: Arc<Notify>,
 ) -> JoinHandle<()> {
-    let handle = tokio::spawn(async move {
+    tokio::spawn(async move {
         loop {
             let ps_url = ps_url.clone();
             let a_slot = Arc::clone(&atomic_slot);
@@ -156,9 +156,7 @@ pub fn watch_slots_retry(
                 }
             }
         }
-    });
-
-    handle
+    })
 }
 
 async fn send_and_confirm_self_transfer_tx(
@@ -290,7 +288,7 @@ pub async fn watch_measure_txs(
                         .fold((0, 0), |(sum, count), diff| (sum + diff, count + 1));
 
                     let lifetime_avg = if count > 0 { sum / count } else { u64::MAX };
-                    let lifetime_fails = fails_by_label.entry(label.clone()).or_insert(0).clone();
+                    let lifetime_fails = *fails_by_label.entry(label.clone()).or_insert(0);
 
                     notify_results.push(WatchTxResult {
                         label: label.clone(),
@@ -316,7 +314,7 @@ pub async fn watch_measure_txs(
                         .fold((0, 0), |(sum, count), diff| (sum + diff, count + 1));
 
                     let lifetime_avg = if count > 0 { sum / count } else { u64::MAX };
-                    let lifetime_fails = fails_by_label.entry(label.clone()).or_insert(0).clone();
+                    let lifetime_fails = *fails_by_label.entry(label.clone()).or_insert(0);
 
                     notify_results.push(WatchTxResult {
                         label: label.clone(),
