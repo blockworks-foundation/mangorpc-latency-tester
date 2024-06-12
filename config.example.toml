@@ -1,0 +1,13 @@
+[general]
+discord_webhook = "https://discord.com/api/webhooks/<chan>/<key>"
+
+[measure_txs]
+user_key = "1,2,3,4,5..."
+pubsub_url="wss://<>"
+rpc_url="https://<url>"
+helius_url = "https://<url>"
+
+[measure_txs.urls_by_label]
+helius = "<helius-url>"
+triton = "<triton-url>"
+lite-rpc = "<lite-rpc-url>"

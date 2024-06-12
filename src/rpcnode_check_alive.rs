@@ -1,49 +1,40 @@
-mod rpcnode_define_checks;
-
-use gethostname::gethostname;
+use crate::{
+    discord::{create_check_alive_discord_message, send_webook_discord},
+    rpcnode_define_checks::{define_checks, Check, CheckResult},
+};
+use anyhow::{bail, Result};
 use itertools::Itertools;
-use rpcnode_define_checks::Check;
-use rpcnode_define_checks::CheckResult;
-use serde_json::{json, Value};
-use std::collections::HashMap;
-use std::process::{exit, ExitCode};
-use std::time::Duration;
+use std::{collections::HashMap, env, process::exit, time::Duration};
 use tokio::task::JoinSet;
 use tracing::{debug, error, info, warn};
 
-const TASK_TIMEOUT: Duration = Duration::from_millis(15000);
+pub const TASK_TIMEOUT: Duration = Duration::from_millis(15_000);
 
-async fn send_webook_discord(discord_body: Value) {
-    let Ok(url) = std::env::var("DISCORD_WEBHOOK") else {
-        info!("sending to discord is disabled");
-        return;
-    };
-
-    let client = reqwest::Client::new();
-    let res = client.post(url).json(&discord_body).send().await;
-    match res {
-        Ok(_) => {
-            info!("webhook sent");
-        }
-        Err(e) => {
-            error!("webhook failed: {:?}", e);
-        }
-    }
-}
-
-#[tokio::main(flavor = "multi_thread", worker_threads = 16)]
-async fn main() -> ExitCode {
+pub async fn check(
+    discord_webhook: Option<String>,
+    rpcnode_label: Option<String>,
+    checks_enabled: Option<String>,
+) -> Result<()> {
     tracing_subscriber::fmt::init();
 
+    let url = discord_webhook.or_else(|| env::var("DISCORD_WEBHOOK").ok());
+    if url.is_none() {
+        warn!("DISCORD_WEBHOOK not provided. discord notifications disabled.");
+    }
+
     // name of rpc node for logging/discord (e.g. hostname)
-    let rpcnode_label = std::env::var("RPCNODE_LABEL").unwrap();
+    let rpcnode_label: String = rpcnode_label
+        .or_else(|| env::var("RPCNODE_LABEL").ok())
+        .expect("RPCNODE_LABEL exists");
 
     let map_checks_by_name: HashMap<String, Check> = enum_iterator::all::<Check>()
         .map(|check| (format!("{:?}", check), check))
         .collect();
 
     // comma separated
-    let checks_enabled = std::env::var("CHECKS_ENABLED").unwrap();
+    let checks_enabled: String = checks_enabled
+        .or_else(|| env::var("CHECKS_ENABLED").ok())
+        .expect("CHECKS_ENABLED exists");
     debug!("checks_enabled unparsed: {}", checks_enabled);
 
     let checks_enabled: Vec<Check> = checks_enabled
@@ -69,7 +60,7 @@ async fn main() -> ExitCode {
 
     let mut all_check_tasks: JoinSet<CheckResult> = JoinSet::new();
 
-    rpcnode_define_checks::define_checks(&checks_enabled, &mut all_check_tasks);
+    define_checks(&checks_enabled, &mut all_check_tasks);
 
     let tasks_total = all_check_tasks.len();
     info!("all {} tasks started...", tasks_total);
@@ -107,100 +98,43 @@ async fn main() -> ExitCode {
 
     assert!(tasks_total > 0, "no results");
 
-    let discord_body = create_discord_message(
+    let discord_body = create_check_alive_discord_message(
         &rpcnode_label,
         checks_enabled,
         &mut tasks_success,
         tasks_timedout,
         success,
     );
-    send_webook_discord(discord_body).await;
 
-    if !success {
-        warn!(
-            "rpcnode <{}> - tasks failed ({}) or timed out ({}) of {} total",
-            rpcnode_label, tasks_failed, tasks_timeout, tasks_total
-        );
-        for check in enum_iterator::all::<Check>() {
-            if !tasks_success.contains(&check) {
-                warn!("!! did not complet task <{:?}>", check);
-            }
-        }
-        return ExitCode::FAILURE;
-    } else {
+    if let Some(url) = url {
+        send_webook_discord(url, discord_body).await;
+    }
+
+    if success {
         info!(
             "rpcnode <{}> - all {} tasks completed: {:?}",
             rpcnode_label, tasks_total, tasks_success
         );
-        return ExitCode::SUCCESS;
-    }
-}
 
-fn create_discord_message(
-    rpcnode_label: &str,
-    checks_enabled: Vec<Check>,
-    tasks_success: &mut [Check],
-    tasks_timedout: Vec<Check>,
-    success: bool,
-) -> Value {
-    let result_per_check = enum_iterator::all::<Check>()
-        .map(|check| {
-            let name = format!("{:?}", check);
-            let disabled = !checks_enabled.contains(&check);
-            let timedout = tasks_timedout.contains(&check);
-            let success = tasks_success.contains(&check);
-            let value = if disabled {
-                "disabled"
-            } else if timedout {
-                "timed out"
-            } else if success {
-                "OK"
-            } else {
-                "failed"
-            };
-            json! {
-                {
-                    "name": name,
-                    "value": value
-                }
-            }
-        })
-        .collect_vec();
-
-    let fields = result_per_check;
-
-    let status_color = if success { 0x00FF00 } else { 0xFC4100 };
-
-    let hostname_executed = gethostname();
-
-    let content = if success {
-        format!("OK rpc node check for <{}>", rpcnode_label)
+        Ok(())
     } else {
-        let userid_groovie = 933275947124273182u128;
-        let role_id_alerts_mangolana = 1100752577307619368u128;
-        let mentions = format!("<@{}> <@&{}>", userid_groovie, role_id_alerts_mangolana);
-        format!("Failed rpc node check for <{}> {}", rpcnode_label, mentions)
-    };
-
-    let body = json! {
-        {
-            "content": content,
-            "description": format!("executed on {}", hostname_executed.to_string_lossy()),
-            "username": "RPC Node Check",
-            "embeds": [
-                {
-                    "title": "Check Results",
-                    "description": "",
-                    "color": status_color,
-                    "fields":
-                       fields
-                    ,
-                    "footer": {
-                        "text": format!("github: mangorpc-latency-tester, author: groovie")
-                    }
-                }
-            ]
+        warn!(
+            "rpcnode <{}> - tasks failed ({}) or timed out ({}) of {} total",
+            rpcnode_label, tasks_failed, tasks_timeout, tasks_total
+        );
+        let mut incomplete_checks: Vec<Check> = Vec::new();
+        for check in enum_iterator::all::<Check>() {
+            if !tasks_success.contains(&check) {
+                incomplete_checks.push(check);
+            }
         }
-    };
-    body
+
+        bail!(
+            "failed to complete all checks: {:?}",
+            incomplete_checks
+                .into_iter()
+                .map(Into::<String>::into)
+                .join(", ")
+        );
+    }
 }
