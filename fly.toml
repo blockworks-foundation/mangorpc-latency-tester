@@ -1,0 +1,17 @@
+app = "cks-tx-tester"
+primary_region = "ams"
+kill_signal = "SIGTERM"
+kill_timeout = 60
+
+[build]
+dockerfile = "./Dockerfile"
+ignorefile = ".dockerignore"
+
+[deploy]
+strategy = "immediate"
+
+[[vm]]
+size = "performance-2x"
+memory = "4GB"
+cpus = 2
+cpu_kind = "performance"

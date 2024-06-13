@@ -3,6 +3,10 @@ name = "mangorpc-latency-tester"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+name = "mangorpc-latency-tester"
+path = "src/main.rs"
+
 [dependencies]
 solana-sdk = "1.17.31"
 solana-rpc-client-api = "1.17.31"
@@ -37,3 +41,4 @@ solana-program = "1.17.31"
 solana-transaction-status = "1.17.31"
 once_cell = "1.19.0"
 chrono = "0.4.38"
+openssl = { version = "0.10.59", features = ["vendored"] }

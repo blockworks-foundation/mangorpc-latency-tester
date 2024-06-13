@@ -164,6 +164,7 @@ async fn send_and_confirm_self_transfer_tx(
     atomic_slot: Arc<AtomicU64>,
     label: String,
     rpc_client: Arc<RpcClient>,
+    test_client: Arc<RpcClient>,
     recent_blockhash: Hash,
     priority_fee: u64,
     lamports: u64,
@@ -182,10 +183,10 @@ async fn send_and_confirm_self_transfer_tx(
     let tx = Transaction::new(&[&user], message, recent_blockhash);
 
     let slot_sent = atomic_slot.load(Ordering::Relaxed);
-    let signature = rpc_client.send_and_confirm_transaction(&tx).await?;
-    sleep(Duration::from_secs(5)).await;
+    let signature = test_client.send_transaction(&tx).await?;
+    sleep(Duration::from_secs(60)).await;
     let slot_confirmed = rpc_client
-        .get_transaction(&signature, UiTransactionEncoding::Json)
+        .get_transaction(&signature, UiTransactionEncoding::Base64)
         .await?
         .slot;
 
@@ -227,6 +228,7 @@ pub async fn watch_measure_txs(
     }
 
     let rpc_client = RpcClient::new(rpc_url);
+    let rpc_client = Arc::new(rpc_client);
 
     let mut interval = time::interval(Duration::from_secs(watch_interval_seconds));
     let mut slot_diffs_by_label: HashMap<String, Vec<u64>> = HashMap::new();
@@ -245,8 +247,9 @@ pub async fn watch_measure_txs(
         let mut sig_futs = Vec::new();
         let c_by_l = clients_by_label.clone();
         for (i, (label, client)) in c_by_l.iter().enumerate() {
+            let rpc_client = Arc::clone(&rpc_client);
             let label = label.clone();
-            let rpc_client = Arc::clone(client);
+            let test_client = Arc::clone(client);
             let user = Arc::clone(&user);
             let a_slot = Arc::clone(&atomic_slot);
             let fut = send_and_confirm_self_transfer_tx(
@@ -254,6 +257,7 @@ pub async fn watch_measure_txs(
                 a_slot,
                 label,
                 rpc_client,
+                test_client,
                 recent_blockhash,
                 priority_fee,
                 i as u64,

@@ -51,8 +51,11 @@ fn setup_logging() {
 
 pub fn parse_user_key(raw: String) -> Result<Keypair> {
     let byte_strs: Vec<&str> = raw.split(',').collect();
-    let bytes: Result<Vec<u8>, _> = byte_strs.iter().map(|s| s.parse::<u8>()).collect();
-    let user = Keypair::from_bytes(&bytes?)?;
+    let bytes: Vec<u8> = byte_strs
+        .iter()
+        .map(|s| s.parse::<u8>().expect("parses u8"))
+        .collect::<Vec<_>>();
+    let user = Keypair::from_bytes(&bytes)?;
 
     Ok(user)
 }

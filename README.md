@@ -67,3 +67,14 @@ cargo run watch-measure-send-transaction -- --watch-interval 600
 ```
 
 ![example discord message](discord1.png)
+
+## deployment on fly
+
+install flyctl then...
+
+- `fly apps create`
+- `fly secrets set --config fly.toml KEY="value"` for .env vars
+- `fly deploy --config fly.toml --ha=false --remote-only`
+- `fly status` for status
+- `fly logs` for logs
+
