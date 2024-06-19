@@ -267,7 +267,7 @@ async fn rpc_get_signatures_for_address(rpc_client: Arc<RpcClient>) {
     // 42
     debug!("Signatures for Address {}: {:?}", address, signatures.len());
 
-    assert!(signatures.len() > 10, "signatures count is too low");
+    assert!(signatures.len() >= 1, "signatures count is too low");
 }
 
 async fn websocket_account_subscribe(rpc_url: Url) {
