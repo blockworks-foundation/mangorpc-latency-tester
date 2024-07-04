@@ -233,11 +233,10 @@ async fn rpc_get_account_info(rpc_client: Arc<RpcClient>) {
 }
 
 async fn rpc_get_token_accounts_by_owner(rpc_client: Arc<RpcClient>) {
-    let owner_pubkey = Pubkey::from_str("whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc").unwrap();
-    let mint = Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap();
+    let owner_pubkey = Pubkey::from_str("gmgLgwHZbRxbPHuGtE2cVVAXL6yrS8SvvFkDNjmWfkj").unwrap();
 
     let token_accounts = rpc_client
-        .get_token_accounts_by_owner(&owner_pubkey, TokenAccountsFilter::Mint(mint))
+        .get_token_accounts_by_owner(&owner_pubkey, TokenAccountsFilter::ProgramId(spl_token::id()))
         .await
         .context("rpc_get_token_accounts_by_owner")
         .unwrap();
@@ -249,7 +248,7 @@ async fn rpc_get_token_accounts_by_owner(rpc_client: Arc<RpcClient>) {
 }
 
 async fn rpc_get_signatures_for_address(rpc_client: Arc<RpcClient>) {
-    let address = Pubkey::from_str("SCbotdTZN5Vu9h4PgSAFoJozrALn2t5qMVdjyBuqu2c").unwrap();
+    let address = Pubkey::from_str("gmgLgwHZbRxbPHuGtE2cVVAXL6yrS8SvvFkDNjmWfkj").unwrap();
 
     let config = GetConfirmedSignaturesForAddress2Config {
         before: None,
