@@ -235,7 +235,7 @@ async fn rpc_get_account_info(rpc_client: Arc<RpcClient>) {
 
 async fn rpc_get_token_accounts_by_owner(rpc_client: Arc<RpcClient>) {
     let owner_pubkey = Pubkey::from_str("gmgLgwHZbRxbPHuGtE2cVVAXL6yrS8SvvFkDNjmWfkj").unwrap();
-    let mint_usdc: Pubkey = Pubkey::from_str("gmgLgwHZbRxbPHuGtE2cVVAXL6yrS8SvvFkDNjmWfkj").unwrap();
+    let mint_usdc: Pubkey = Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap();
 
     let token_accounts = rpc_client
         .get_token_accounts_by_owner(&owner_pubkey, TokenAccountsFilter::Mint(mint_usdc))
