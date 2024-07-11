@@ -19,6 +19,7 @@ use std::pin::pin;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
+use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
 use tokio::task::JoinSet;
 use tokio::time::timeout;
 use tracing::debug;
@@ -191,14 +192,14 @@ async fn create_geyser_token_account_task(config: GrpcSourceConfig) {
 async fn rpc_gpa(rpc_client: Arc<RpcClient>) {
     let program_pubkey = Pubkey::from_str("4MangoMjqJ2firMokCjjGgoK8d4MXcrgL7XJaL3w6fVg").unwrap();
 
-    let _filter = RpcFilterType::Memcmp(Memcmp::new_raw_bytes(30, vec![42]));
-
     let _config = RpcProgramAccountsConfig {
-        // filters: Some(vec![filter]),
         filters: None,
         account_config: RpcAccountInfoConfig {
-            encoding: None,
-            data_slice: None,
+            encoding: Some(UiAccountEncoding::Base64),
+            data_slice: Some(UiDataSliceConfig {
+                offset: 0,
+                length: 4,
+            }),
             commitment: None,
             min_context_slot: None,
         },
@@ -248,12 +249,12 @@ async fn rpc_get_token_accounts_by_owner(rpc_client: Arc<RpcClient>) {
 }
 
 async fn rpc_get_signatures_for_address(rpc_client: Arc<RpcClient>) {
-    let address = Pubkey::from_str("gmgLgwHZbRxbPHuGtE2cVVAXL6yrS8SvvFkDNjmWfkj").unwrap();
+    let address = Pubkey::from_str("Vote111111111111111111111111111111111111111").unwrap();
 
     let config = GetConfirmedSignaturesForAddress2Config {
         before: None,
         until: None,
-        limit: Some(42),
+        limit: Some(10),
         commitment: Some(CommitmentConfig::confirmed()),
     };
 
@@ -263,10 +264,9 @@ async fn rpc_get_signatures_for_address(rpc_client: Arc<RpcClient>) {
         .context("get_signatures_for_address_with_config")
         .unwrap();
 
-    // 42
     debug!("Signatures for Address {}: {:?}", address, signatures.len());
 
-    assert!(signatures.len() >= 1, "signatures count is too low");
+    assert!(signatures.len() >= 10, "signatures count is too low");
 }
 
 async fn websocket_account_subscribe(rpc_url: Url) {
