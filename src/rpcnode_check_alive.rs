@@ -107,14 +107,16 @@ async fn main() -> ExitCode {
 
     assert!(tasks_total > 0, "no results");
 
-    let discord_body = create_discord_message(
-        &rpcnode_label,
-        checks_enabled,
-        &mut tasks_success,
-        tasks_timedout,
-        success,
-    );
-    send_webook_discord(discord_body).await;
+    if !success {
+        let discord_body = create_discord_message(
+            &rpcnode_label,
+            checks_enabled,
+            &mut tasks_success,
+            tasks_timedout,
+            success,
+        );
+        send_webook_discord(discord_body).await;
+    }
 
     if !success {
         warn!(
