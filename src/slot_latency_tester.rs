@@ -119,7 +119,7 @@ async fn main() {
 async fn rpc_getslot_source(rpc_url: Url, slot_source: SlotSource, mpsc_downstream: tokio::sync::mpsc::Sender<SlotDatapoint>) {
     let rpc = RpcClient::new(rpc_url.to_string());
     loop {
-        tokio::time::sleep(Duration::from_millis(100)).await;
+        tokio::time::sleep(Duration::from_millis(800)).await;
         let slot = rpc
             .get_slot_with_commitment(CommitmentConfig::processed())
             .await
