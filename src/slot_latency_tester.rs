@@ -57,7 +57,8 @@ impl SlotDatapoint {
 
 #[tokio::main(flavor = "multi_thread", worker_threads = 16)]
 async fn main() {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::INFO).init();
 
     // TODO add solana rpc
     let solana_rpc_url = format!("https://api.mainnet-beta.solana.com");
@@ -75,7 +76,7 @@ async fn main() {
 
 
 
-    let grpc_addr = std::env::var("GRPC_ADDR").unwrap();
+    let grpc_addr = std::env::var("GRPC_ADDR").expect("require env variable GRPC_ADDR");
     let grpc_x_token = env::var("GRPC_X_TOKEN").ok();
 
     let timeouts = GrpcConnectionTimeouts {
