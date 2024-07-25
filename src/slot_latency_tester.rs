@@ -14,7 +14,8 @@ use std::thread::sleep;
 use std::time::Duration;
 use enum_iterator::Sequence;
 use itertools::Itertools;
-use tokio::select;
+use tokio::{io, select};
+use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc::error::SendError;
 use tokio::time::Instant;
 use tokio_stream::StreamExt;
@@ -109,9 +110,9 @@ async fn main() {
 
         visualize_slots(&latest_slot_per_source).await;
 
-        if Instant::now().duration_since(started_at) > Duration::from_secs(10) {
-            break;
-        }
+        // if Instant::now().duration_since(started_at) > Duration::from_secs(10) {
+        //     break;
+        // }
     }
 
 }
@@ -215,14 +216,11 @@ async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>) {
         .map(|check| (format!("{:?}", check), check))
         .collect();
 
-
-
     let sorted_by_time: Vec<(&SlotSource, &Slot)> = latest_slot_per_source.iter().sorted_by_key(|(_, slot)| *slot).collect_vec();
     let deltas = sorted_by_time.windows(2).map(|window| {
         let (_source1, slot1) = window[0];
         let (_source2, slot2) = window[1];
-        let diff = slot2 - slot1;
-        diff
+        slot2 - slot1
     }).collect_vec();
 
     for i in 0..(sorted_by_time.len() + deltas.len()) {
@@ -231,10 +229,12 @@ async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>) {
             print!("{}({:?})", slot, source);
         } else {
             let edge = deltas.get(i / 2).unwrap().clone();
-            if edge > 0 {
+            if edge == 0 {
+                print!(" = ");
+            } else if edge < 20 {
                 print!(" {} ", ".".repeat(edge as usize));
             } else {
-                print!(" = ");
+                print!(" ...>>{}>>... ", edge);
             }
         }
     }
@@ -250,5 +250,6 @@ async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>) {
     }
 
     println!();
+    // print!("{}[2K\r", 27 as char);
 
 }
