@@ -7,11 +7,13 @@ use solana_rpc_client_api::request::TokenAccountsFilter;
 use solana_rpc_client_api::response::SlotInfo;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey::Pubkey;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::pin::pin;
 use std::str::FromStr;
 use std::thread::sleep;
 use std::time::Duration;
+use enum_iterator::Sequence;
+use itertools::Itertools;
 use tokio::select;
 use tokio::sync::mpsc::error::SendError;
 use tokio::time::Instant;
@@ -26,7 +28,7 @@ use yellowstone_grpc_proto::geyser::{
 
 type Slot = u64;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, Hash, PartialEq, Sequence)]
 enum SlotSource {
     SolanaWebsocket,
     SolanaRpc,
@@ -100,15 +102,18 @@ async fn main() {
     tokio::spawn(rpc_getslot_source(triton_rpc_url, SlotSource::TritonRpc, slots_tx.clone()));
 
     let started_at = Instant::now();
+    let mut latest_slot_per_source: HashMap<SlotSource, Slot> = HashMap::new();
     while let Some(SlotDatapoint { slot, source, .. }) = slots_rx.recv().await {
-        println!("Slot from {:?}: {}", source, slot);
+        // println!("Slot from {:?}: {}", source, slot);
+        latest_slot_per_source.insert(source, slot);
 
-        if Instant::now().duration_since(started_at) > Duration::from_secs(2) {
+        visualize_slots(&latest_slot_per_source).await;
+
+        if Instant::now().duration_since(started_at) > Duration::from_secs(10) {
             break;
         }
     }
 
-    sleep(Duration::from_secs(15));
 }
 
 async fn rpc_getslot_source(rpc_url: Url, slot_source: SlotSource, mpsc_downstream: tokio::sync::mpsc::Sender<SlotDatapoint>) {
@@ -200,4 +205,50 @@ pub fn slots() -> SubscribeRequest {
         accounts_data_slice: Default::default(),
         ping: None,
     }
+}
+
+
+async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>) {
+    // println!("Slots: {:?}", latest_slot_per_source);
+
+    let map_source_by_name: HashMap<String, SlotSource> = enum_iterator::all::<SlotSource>()
+        .map(|check| (format!("{:?}", check), check))
+        .collect();
+
+
+
+    let sorted_by_time: Vec<(&SlotSource, &Slot)> = latest_slot_per_source.iter().sorted_by_key(|(_, slot)| *slot).collect_vec();
+    let deltas = sorted_by_time.windows(2).map(|window| {
+        let (_source1, slot1) = window[0];
+        let (_source2, slot2) = window[1];
+        let diff = slot2 - slot1;
+        diff
+    }).collect_vec();
+
+    for i in 0..(sorted_by_time.len() + deltas.len()) {
+        if i % 2 == 0 {
+            let (source, slot) = sorted_by_time.get(i / 2).unwrap();
+            print!("{}({:?})", slot, source);
+        } else {
+            let edge = deltas.get(i / 2).unwrap().clone();
+            if edge > 0 {
+                print!(" {} ", ".".repeat(edge as usize));
+            } else {
+                print!(" = ");
+            }
+        }
+    }
+
+    let all_sources: HashSet<SlotSource> = map_source_by_name.values().cloned().collect();
+    let sources_with_data: HashSet<SlotSource> = latest_slot_per_source.keys().cloned().collect();
+
+    let no_data_sources = all_sources.difference(&sources_with_data).collect_vec();
+    if no_data_sources.is_empty() {
+        print!(" // all sources have data");
+    } else {
+        print!(" // no data from {:?}", no_data_sources);
+    }
+
+    println!();
+
 }

@@ -52,3 +52,18 @@ cargo run --bin rpc-node-check-alive
 ```
 
 ![example discord message](discord1.png)
+
+
+## Slot Latency
+
+```
+
+279582120(TritonRpc) .......... 279582130(SolanaWebsocket) . 279582131(SolanaRpc) .. 279582133(YellowstoneGrpc) // no data from [TritonWebsocket]
+279582120(TritonRpc) ........... 279582131(SolanaWebsocket) = 279582131(SolanaRpc) .. 279582133(YellowstoneGrpc) // no data from [TritonWebsocket]
+279582120(TritonRpc) ........... 279582131(SolanaWebsocket) = 279582131(SolanaRpc) .. 279582133(YellowstoneGrpc) // no data from [TritonWebsocket]
+279582120(TritonRpc) ........... 279582131(SolanaWebsocket) = 279582131(SolanaRpc) .. 279582133(YellowstoneGrpc) // no data from [TritonWebsocket]
+279582120(TritonRpc) .. 279582122(TritonWebsocket) ......... 279582131(SolanaWebsocket) = 279582131(SolanaRpc) .. 279582133(YellowstoneGrpc) // all sources have data
+279582120(TritonRpc) .. 279582122(TritonWebsocket) ......... 279582131(SolanaWebsocket) = 279582131(SolanaRpc) .. 279582133(YellowstoneGrpc) // all sources have data
+279582120(TritonRpc) .. 279582122(TritonWebsocket) ......... 279582131(SolanaWebsocket) = 279582131(SolanaRpc) ... 279582134(YellowstoneGrpc) // all sources have data
+279582121(TritonRpc) . 279582122(TritonWebsocket) ......... 279582131(SolanaWebsocket) = 279582131(SolanaRpc) ... 279582134(YellowstoneGrpc) // all sources have data
+```
