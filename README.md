@@ -56,6 +56,15 @@ cargo run --bin rpc-node-check-alive
 
 ## Slot Latency
 
+
+### Run from console
+
+```bash
+GRPC_ADDR=http://178.63.241.38:10000/ RUST_LOG=info,slot_latency_tester=debug cargo run --bin slot-latency-tester
+```
+
+
+### Example output
 ```
 
 279582120(TritonRpc) .......... 279582130(SolanaWebsocket) . 279582131(SolanaRpc) .. 279582133(YellowstoneGrpc) // no data from [TritonWebsocket]
