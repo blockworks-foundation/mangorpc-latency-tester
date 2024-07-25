@@ -8,6 +8,7 @@ use solana_rpc_client_api::response::SlotInfo;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey::Pubkey;
 use std::collections::{HashMap, HashSet};
+use std::env;
 use std::pin::pin;
 use std::str::FromStr;
 use std::thread::sleep;
@@ -75,6 +76,7 @@ async fn main() {
 
 
     let grpc_addr = std::env::var("GRPC_ADDR").unwrap();
+    let grpc_x_token = env::var("GRPC_X_TOKEN").ok();
 
     let timeouts = GrpcConnectionTimeouts {
         connect_timeout: Duration::from_secs(10),
@@ -83,7 +85,7 @@ async fn main() {
         receive_timeout: Duration::from_secs(10),
     };
 
-    let config = GrpcSourceConfig::new(grpc_addr.to_string(), None, None, timeouts.clone());
+    let config = GrpcSourceConfig::new(grpc_addr.to_string(), grpc_x_token, None, timeouts.clone());
 
     let (slots_tx, mut slots_rx) = tokio::sync::mpsc::channel::<SlotDatapoint>(100);
 
