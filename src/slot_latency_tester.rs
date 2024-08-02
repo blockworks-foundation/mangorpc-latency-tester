@@ -60,7 +60,6 @@ async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO).init();
 
-    // TODO add solana rpc
     let solana_rpc_url = format!("https://api.mainnet-beta.solana.com");
     let solana_ws_url = format!("wss://api.mainnet-beta.solana.com");
     let triton_ws_url = format!(
@@ -121,17 +120,27 @@ async fn main() {
 }
 
 async fn rpc_getslot_source(rpc_url: Url, slot_source: SlotSource, mpsc_downstream: tokio::sync::mpsc::Sender<SlotDatapoint>) {
-    let rpc = RpcClient::new(rpc_url.to_string());
+    let rpc = RpcClient::new_with_timeout(rpc_url.to_string(), Duration::from_secs(5));
     loop {
         tokio::time::sleep(Duration::from_millis(800)).await;
-        let slot = rpc
+        let res = rpc
             .get_slot_with_commitment(CommitmentConfig::processed())
-            .await
-            .unwrap();
-        match mpsc_downstream.send(SlotDatapoint::new(slot_source.clone(), slot)).await {
-            Ok(_) => {}
-            Err(_) => return,
+            .await;
+
+        match res {
+            Ok(slot) => {
+                match mpsc_downstream.send(SlotDatapoint::new(slot_source.clone(), slot)).await {
+                    Ok(_) => {}
+                    Err(_) => return,
+                }
+            }
+            Err(err) => {
+                println!("Error getting slot: {:?} - retry", err);
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
         }
+
+
     }
 }
 
