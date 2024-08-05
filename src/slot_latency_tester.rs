@@ -155,7 +155,7 @@ async fn websocket_source(rpc_url: Url, slot_source: SlotSource,
     let mut ws1 = StableWebSocket::new_with_timeout(
         rpc_url,
         processed_slot_subscribe.clone(),
-        Duration::from_secs(3),
+        Duration::MAX,
     )
     .await
     .unwrap();
