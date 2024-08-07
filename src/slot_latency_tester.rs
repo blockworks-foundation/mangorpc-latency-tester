@@ -1,3 +1,5 @@
+mod utils;
+
 use geyser_grpc_connector::grpc_subscription_autoreconnect_streams::create_geyser_reconnecting_stream;
 use geyser_grpc_connector::{GrpcConnectionTimeouts, GrpcSourceConfig, Message};
 use serde_json::json;
@@ -20,13 +22,14 @@ use tokio::io::AsyncWriteExt;
 use tokio::sync::mpsc::error::SendError;
 use tokio::time::Instant;
 use tokio_stream::StreamExt;
-use tracing::info;
+use tracing::{error, info};
 use url::Url;
 use websocket_tungstenite_retry::websocket_stable::{StableWebSocket, WsMessage};
 use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
 use yellowstone_grpc_proto::geyser::{
     SubscribeRequest, SubscribeRequestFilterAccounts, SubscribeRequestFilterSlots, SubscribeUpdate,
 };
+use crate::utils::configure_panic_hook;
 
 type Slot = u64;
 
@@ -59,6 +62,7 @@ impl SlotDatapoint {
 async fn main() {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO).init();
+    configure_panic_hook();
 
     let solana_rpc_url = format!("https://api.mainnet-beta.solana.com");
     let solana_ws_url = format!("wss://api.mainnet-beta.solana.com");
@@ -155,7 +159,7 @@ async fn websocket_source(rpc_url: Url, slot_source: SlotSource,
     let mut ws1 = StableWebSocket::new_with_timeout(
         rpc_url,
         processed_slot_subscribe.clone(),
-        Duration::MAX,
+        Duration::from_secs(3600 * 100 * 100),
     )
     .await
     .unwrap();
@@ -169,10 +173,12 @@ async fn websocket_source(rpc_url: Url, slot_source: SlotSource,
             let slot_info = ws_result.params.result;
             match mpsc_downstream.send(SlotDatapoint::new(slot_source.clone(), slot_info.slot)).await {
                 Ok(_) => {}
-                Err(_) => return,
+                Err(_) => panic!("downstream error"),
             }
         }
     }
+
+    panic!("Websocket source ended unexpectedly");
 }
 
 // note: this might fail if the yellowstone plugin does not allow "any broadcast filter"
