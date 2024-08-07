@@ -6,10 +6,10 @@ use geyser_grpc_connector::grpc_subscription_autoreconnect_streams::create_geyse
 use geyser_grpc_connector::{GrpcConnectionTimeouts, GrpcSourceConfig, Message};
 use serde_json::json;
 use solana_account_decoder::parse_token::spl_token_ids;
+use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
 use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client::rpc_client::GetConfirmedSignaturesForAddress2Config;
 use solana_rpc_client_api::config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
-use solana_rpc_client_api::filter::{Memcmp, RpcFilterType};
 use solana_rpc_client_api::request::TokenAccountsFilter;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey::Pubkey;
@@ -19,7 +19,6 @@ use std::pin::pin;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
-use solana_account_decoder::{UiAccountEncoding, UiDataSliceConfig};
 use tokio::task::JoinSet;
 use tokio::time::timeout;
 use tracing::debug;
@@ -235,7 +234,8 @@ async fn rpc_get_account_info(rpc_client: Arc<RpcClient>) {
 
 async fn rpc_get_token_accounts_by_owner(rpc_client: Arc<RpcClient>) {
     let owner_pubkey = Pubkey::from_str("gmgLgwHZbRxbPHuGtE2cVVAXL6yrS8SvvFkDNjmWfkj").unwrap();
-    let mint_usdc: Pubkey = Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap();
+    let mint_usdc: Pubkey =
+        Pubkey::from_str("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v").unwrap();
 
     let token_accounts = rpc_client
         .get_token_accounts_by_owner(&owner_pubkey, TokenAccountsFilter::Mint(mint_usdc))
