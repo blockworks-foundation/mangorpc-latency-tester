@@ -113,12 +113,14 @@ async fn main() {
     ));
 
     let mut latest_slot_per_source: HashMap<SlotSource, Slot> = HashMap::new();
+    let mut update_timestamp_per_source: HashMap<SlotSource, Instant> = HashMap::new();
 
-    while let Some(SlotDatapoint { slot, source, .. }) = slots_rx.recv().await {
+    while let Some(SlotDatapoint { slot, source, timestamp: update_timestamp }) = slots_rx.recv().await {
         // println!("Slot from {:?}: {}", source, slot);
-        latest_slot_per_source.insert(source, slot);
+        latest_slot_per_source.insert(source.clone(), slot);
+        update_timestamp_per_source.insert(source.clone(), update_timestamp);
 
-        visualize_slots(&latest_slot_per_source).await;
+        visualize_slots(&latest_slot_per_source, &update_timestamp_per_source).await;
 
         // if Instant::now().duration_since(started_at) > Duration::from_secs(10) {
         //     break;
@@ -260,8 +262,18 @@ pub fn slots() -> SubscribeRequest {
     }
 }
 
-async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>) {
+const STALE_SOURCE_TIMEOUT: Duration = Duration::from_millis(3000);
+
+async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>, update_timestamp_per_source: &HashMap<SlotSource, Instant>) {
     // println!("Slots: {:?}", latest_slot_per_source);
+
+    let threshold = Instant::now() - STALE_SOURCE_TIMEOUT;
+
+    let stale_sources: HashSet<SlotSource> = update_timestamp_per_source.iter()
+        .filter(|(source, &updated_timestamp)| updated_timestamp < threshold)
+        .map(|(source, _)| source)
+        .cloned()
+        .collect();
 
     let map_source_by_name: HashMap<String, SlotSource> = enum_iterator::all::<SlotSource>()
         .map(|check| (format!("{:?}", check), check))
@@ -283,7 +295,8 @@ async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>) {
     for i in 0..(sorted_by_time.len() + deltas.len()) {
         if i % 2 == 0 {
             let (source, slot) = sorted_by_time.get(i / 2).unwrap();
-            print!("{}({:?})", slot, source);
+            let staleness_marker = if stale_sources.contains(source) { "!!" } else { "" };
+            print!("{staleness_marker}{slot}({source:?}){staleness_marker}");
         } else {
             let edge = *deltas.get(i / 2).unwrap();
             if edge == 0 {
@@ -304,6 +317,12 @@ async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>) {
         print!(" // all sources have data");
     } else {
         print!(" // no data from {:?}", no_data_sources);
+    }
+
+    if stale_sources.is_empty() {
+        print!(", no stale sources");
+    } else {
+        print!(", {} stale sources (threshold={:?})", stale_sources.len(), STALE_SOURCE_TIMEOUT);
     }
 
     println!();
