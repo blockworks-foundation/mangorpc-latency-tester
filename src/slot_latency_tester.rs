@@ -31,7 +31,7 @@ enum SlotSource {
     SolanaRpc,
     TritonRpc,
     TritonWebsocket,
-    YellowstoneGrpc,
+    OurGrpcSource,
 }
 
 #[allow(dead_code)]
@@ -58,6 +58,20 @@ async fn main() {
         .init();
     configure_panic_hook();
 
+
+    let timeouts = GrpcConnectionTimeouts {
+        connect_timeout: Duration::from_secs(10),
+        request_timeout: Duration::from_secs(10),
+        subscribe_timeout: Duration::from_secs(10),
+        receive_timeout: Duration::from_secs(10),
+    };
+
+    // the system under test (our system)
+    let grpc_addr = std::env::var("GRPC_ADDR").expect("require env variable GRPC_ADDR");
+    let grpc_x_token = env::var("GRPC_X_TOKEN").ok();
+    let our_grpc_config = GrpcSourceConfig::new(grpc_addr.to_string(), grpc_x_token, None, timeouts.clone());
+
+    // the sources to compare against
     let solana_rpc_url = "https://api.mainnet-beta.solana.com".to_string();
     let solana_ws_url = "wss://api.mainnet-beta.solana.com".to_string();
     let triton_ws_url = format!(
@@ -70,24 +84,13 @@ async fn main() {
     );
     let solana_rpc_url = Url::parse(solana_rpc_url.as_str()).unwrap();
     let triton_rpc_url = Url::parse(triton_rpc_url.as_str()).unwrap();
-
-    let grpc_addr = std::env::var("GRPC_ADDR").expect("require env variable GRPC_ADDR");
-    let grpc_x_token = env::var("GRPC_X_TOKEN").ok();
-
-    let timeouts = GrpcConnectionTimeouts {
-        connect_timeout: Duration::from_secs(10),
-        request_timeout: Duration::from_secs(10),
-        subscribe_timeout: Duration::from_secs(10),
-        receive_timeout: Duration::from_secs(10),
-    };
-
-    let config = GrpcSourceConfig::new(grpc_addr.to_string(), grpc_x_token, None, timeouts.clone());
+    // --
 
     let (slots_tx, mut slots_rx) = tokio::sync::mpsc::channel::<SlotDatapoint>(100);
 
-    start_geyser_slots_task(
-        config.clone(),
-        SlotSource::YellowstoneGrpc,
+    start_our_grpc_geyser_slots_task(
+        our_grpc_config.clone(),
+        SlotSource::OurGrpcSource,
         slots_tx.clone(),
     );
 
@@ -215,7 +218,7 @@ async fn websocket_source(
 }
 
 // note: this might fail if the yellowstone plugin does not allow "any broadcast filter"
-fn start_geyser_slots_task(
+fn start_our_grpc_geyser_slots_task(
     config: GrpcSourceConfig,
     slot_source: SlotSource,
     mpsc_downstream: tokio::sync::mpsc::Sender<SlotDatapoint>,
