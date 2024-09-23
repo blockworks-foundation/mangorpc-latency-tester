@@ -179,7 +179,6 @@ async fn websocket_source(
     )
     .await
     .unwrap();
-
     let mut channel = ws1.subscribe_message_channel();
 
     // the timeout is a workaround as we see the websocket source starving with no data

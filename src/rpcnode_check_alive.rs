@@ -125,7 +125,7 @@ async fn main() -> ExitCode {
         );
         for check in enum_iterator::all::<Check>() {
             if !tasks_success.contains(&check) {
-                warn!("!! did not complet task <{:?}>", check);
+                warn!("!! did not complete task <{:?}>", check);
             }
         }
         return ExitCode::FAILURE;
