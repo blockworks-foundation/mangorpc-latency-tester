@@ -14,8 +14,8 @@ use std::env;
 use std::pin::pin;
 use std::time::Duration;
 use tokio::sync::broadcast::error::RecvError;
-use tokio::time::{Instant, sleep, timeout, Timeout};
 use tokio::time::error::Elapsed;
+use tokio::time::{sleep, timeout, Instant, Timeout};
 use tokio_stream::StreamExt;
 use tracing::{error, warn};
 use url::Url;
@@ -58,7 +58,6 @@ async fn main() {
         .init();
     configure_panic_hook();
 
-
     let timeouts = GrpcConnectionTimeouts {
         connect_timeout: Duration::from_secs(10),
         request_timeout: Duration::from_secs(10),
@@ -69,7 +68,8 @@ async fn main() {
     // the system under test (our system)
     let grpc_addr = std::env::var("GRPC_ADDR").expect("require env variable GRPC_ADDR");
     let grpc_x_token = env::var("GRPC_X_TOKEN").ok();
-    let our_grpc_config = GrpcSourceConfig::new(grpc_addr.to_string(), grpc_x_token, None, timeouts.clone());
+    let our_grpc_config =
+        GrpcSourceConfig::new(grpc_addr.to_string(), grpc_x_token, None, timeouts.clone());
 
     // the sources to compare against
     let solana_rpc_url = "https://api.mainnet-beta.solana.com".to_string();
@@ -118,7 +118,12 @@ async fn main() {
     let mut latest_slot_per_source: HashMap<SlotSource, Slot> = HashMap::new();
     let mut update_timestamp_per_source: HashMap<SlotSource, Instant> = HashMap::new();
 
-    while let Some(SlotDatapoint { slot, source, timestamp: update_timestamp }) = slots_rx.recv().await {
+    while let Some(SlotDatapoint {
+        slot,
+        source,
+        timestamp: update_timestamp,
+    }) = slots_rx.recv().await
+    {
         // println!("Slot from {:?}: {}", source, slot);
         latest_slot_per_source.insert(source.clone(), slot);
         update_timestamp_per_source.insert(source.clone(), update_timestamp);
@@ -266,12 +271,16 @@ pub fn slots() -> SubscribeRequest {
 
 const STALE_SOURCE_TIMEOUT: Duration = Duration::from_millis(3000);
 
-async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>, update_timestamp_per_source: &HashMap<SlotSource, Instant>) {
+async fn visualize_slots(
+    latest_slot_per_source: &HashMap<SlotSource, Slot>,
+    update_timestamp_per_source: &HashMap<SlotSource, Instant>,
+) {
     // println!("Slots: {:?}", latest_slot_per_source);
 
     let threshold = Instant::now() - STALE_SOURCE_TIMEOUT;
 
-    let stale_sources: HashSet<SlotSource> = update_timestamp_per_source.iter()
+    let stale_sources: HashSet<SlotSource> = update_timestamp_per_source
+        .iter()
         .filter(|(source, &updated_timestamp)| updated_timestamp < threshold)
         .map(|(source, _)| source)
         .cloned()
@@ -297,7 +306,11 @@ async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>, upd
     for i in 0..(sorted_by_time.len() + deltas.len()) {
         if i % 2 == 0 {
             let (source, slot) = sorted_by_time.get(i / 2).unwrap();
-            let staleness_marker = if stale_sources.contains(source) { "!!" } else { "" };
+            let staleness_marker = if stale_sources.contains(source) {
+                "!!"
+            } else {
+                ""
+            };
             print!("{staleness_marker}{slot}({source:?}){staleness_marker}");
         } else {
             let edge = *deltas.get(i / 2).unwrap();
@@ -324,7 +337,11 @@ async fn visualize_slots(latest_slot_per_source: &HashMap<SlotSource, Slot>, upd
     if stale_sources.is_empty() {
         print!(", no stale sources");
     } else {
-        print!(", {} stale sources (threshold={:?})", stale_sources.len(), STALE_SOURCE_TIMEOUT);
+        print!(
+            ", {} stale sources (threshold={:?})",
+            stale_sources.len(),
+            STALE_SOURCE_TIMEOUT
+        );
     }
 
     println!();

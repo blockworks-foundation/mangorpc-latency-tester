@@ -11,6 +11,7 @@ use solana_rpc_client::nonblocking::rpc_client::RpcClient;
 use solana_rpc_client::rpc_client::GetConfirmedSignaturesForAddress2Config;
 use solana_rpc_client_api::config::{RpcAccountInfoConfig, RpcProgramAccountsConfig};
 use solana_rpc_client_api::request::TokenAccountsFilter;
+use solana_sdk::clock::Slot;
 use solana_sdk::commitment_config::CommitmentConfig;
 use solana_sdk::pubkey::Pubkey;
 use std::collections::HashMap;
@@ -19,13 +20,17 @@ use std::pin::pin;
 use std::str::FromStr;
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::oneshot;
+use tokio::sync::oneshot::Sender;
 use tokio::task::JoinSet;
-use tokio::time::timeout;
-use tracing::debug;
+use tokio::time::{timeout, Instant};
+use tracing::{debug, error, info};
 use url::Url;
 use websocket_tungstenite_retry::websocket_stable::{StableWebSocket, WsMessage};
 use yellowstone_grpc_proto::geyser::subscribe_update::UpdateOneof;
-use yellowstone_grpc_proto::geyser::{SubscribeRequest, SubscribeRequestFilterAccounts};
+use yellowstone_grpc_proto::geyser::{
+    SubscribeRequest, SubscribeRequestFilterAccounts, SubscribeRequestFilterSlots,
+};
 
 #[derive(Clone, Debug, PartialEq, Sequence)]
 pub enum Check {
@@ -36,6 +41,7 @@ pub enum Check {
     GeyserAllAccounts,
     GeyserTokenAccount,
     WebsocketAccount,
+    SlotLagging,
 }
 
 pub enum CheckResult {
@@ -97,11 +103,30 @@ pub fn define_checks(checks_enabled: &[Check], all_check_tasks: &mut JoinSet<Che
             all_check_tasks,
         );
     }
+    if checks_enabled.contains(&Check::SlotLagging) {
+        let geyser_grpc_config = read_geyser_config();
+        let reference_rpc_url = reference_rpc_url();
+        add_task(
+            Check::SlotLagging,
+            slot_latency_check(geyser_grpc_config, reference_rpc_url),
+            all_check_tasks,
+        );
+    }
 }
 
 fn read_rpc_config() -> Arc<RpcClient> {
     // http://...
     let rpc_addr = std::env::var("RPC_HTTP_ADDR").unwrap();
+
+    let rpc_url = Url::parse(rpc_addr.as_str()).unwrap();
+
+    Arc::new(RpcClient::new(rpc_url.to_string()))
+}
+
+fn reference_rpc_url() -> Arc<RpcClient> {
+    const FALLBACK_RPC: &str = "https://api.mainnet-beta.solana.com";
+    // http://...
+    let rpc_addr = std::env::var("REFERENCE_RPC_HTTP_ADDR").unwrap_or(FALLBACK_RPC.to_string());
 
     let rpc_url = Url::parse(rpc_addr.as_str()).unwrap();
 
@@ -355,4 +380,91 @@ pub fn token_accounts() -> SubscribeRequest {
         accounts_data_slice: Default::default(),
         ping: None,
     }
+}
+
+fn slots() -> SubscribeRequest {
+    let mut slot_subs = HashMap::new();
+    slot_subs.insert(
+        "client".to_string(),
+        SubscribeRequestFilterSlots {
+            filter_by_commitment: Some(true),
+        },
+    );
+
+    SubscribeRequest {
+        slots: slot_subs,
+        accounts: HashMap::new(),
+        transactions: HashMap::new(),
+        entry: Default::default(),
+        blocks: Default::default(),
+        blocks_meta: HashMap::new(),
+        commitment: Some(yellowstone_grpc_proto::prelude::CommitmentLevel::Processed as i32),
+        accounts_data_slice: Default::default(),
+        ping: None,
+    }
+}
+
+async fn rpc_getslot_from_rpc(rpc: Arc<RpcClient>) -> Slot {
+    loop {
+        let res = rpc
+            .get_slot_with_commitment(CommitmentConfig::processed())
+            .await;
+
+        match res {
+            Ok(slot) => {
+                debug!("Reference slot: {:?}", slot);
+                return slot as Slot;
+            }
+            Err(err) => {
+                error!("Error getting slot: {:?} - retry", err);
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(800)).await;
+    }
+}
+
+async fn spawn_get_our_grpc_geyser_slot(config: GrpcSourceConfig, oneshot: Sender<u64>) {
+    let started_at = Instant::now();
+    let geyser_stream = create_geyser_reconnecting_stream(config.clone(), slots());
+
+    tokio::spawn(async move {
+        let mut geyser_stream = pin!(geyser_stream);
+        while let Some(message) = geyser_stream.next().await {
+            if let Message::GeyserSubscribeUpdate(subscriber_update) = message {
+                if let Some(UpdateOneof::Slot(slot_info)) = subscriber_update.update_oneof {
+                    debug!(
+                        "Geyser slot read in {:.2}ms",
+                        started_at.elapsed().as_secs_f64() * 1000.0
+                    );
+                    oneshot.send(slot_info.slot as Slot).unwrap();
+                    return;
+                }
+            }
+        }
+    });
+}
+
+async fn slot_latency_check(geyser_grpc_config: GrpcSourceConfig, ref_rpc_client: Arc<RpcClient>) {
+    let (tx, rx) = oneshot::channel();
+    spawn_get_our_grpc_geyser_slot(geyser_grpc_config, tx).await;
+
+    let our_slot = rx.await.unwrap();
+    let upper_slot = rpc_getslot_from_rpc(ref_rpc_client.clone()).await;
+
+    debug!("Our slot: {}, Upper slot: {}", our_slot, upper_slot);
+
+    // Our slot: 294879057, Upper slot: 294879058
+
+    let lag = our_slot.saturating_sub(upper_slot).max(0);
+
+    info!("Slot lag: {} (us:{} them:{})", lag, our_slot, upper_slot);
+
+    const SLOT_LAG_ERROR_THRESHOLD: u64 = 10;
+
+    assert!(
+        lag < SLOT_LAG_ERROR_THRESHOLD,
+        "Slot lag was too high (us:{} them:{})",
+        our_slot,
+        upper_slot
+    );
 }
