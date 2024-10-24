@@ -43,7 +43,7 @@ async fn main() -> ExitCode {
         .collect();
 
     // comma separated
-    let checks_enabled = std::env::var("CHECKS_ENABLED").unwrap();
+    let checks_enabled = std::env::var("CHECKS_ENABLED").expect("CHECKS_ENABLED not set");
     debug!("checks_enabled unparsed: {}", checks_enabled);
 
     let checks_enabled: Vec<Check> = checks_enabled

@@ -106,9 +106,10 @@ pub fn define_checks(checks_enabled: &[Check], all_check_tasks: &mut JoinSet<Che
     if checks_enabled.contains(&Check::SlotLagging) {
         let geyser_grpc_config = read_geyser_config();
         let reference_rpc_url = reference_rpc_url();
+        let slot_lag_threshold = read_slot_lag_threshold_config();
         add_task(
             Check::SlotLagging,
-            slot_latency_check(geyser_grpc_config, reference_rpc_url),
+            slot_latency_check(geyser_grpc_config, reference_rpc_url, slot_lag_threshold),
             all_check_tasks,
         );
     }
@@ -137,6 +138,12 @@ fn read_ws_config() -> String {
     // wss://...
 
     std::env::var("RPC_WS_ADDR").unwrap()
+}
+
+fn read_slot_lag_threshold_config() -> u64 {
+    std::env::var("SLOT_LAGGING_WARN_THRESHOLD")
+        .unwrap_or("10".to_string())
+        .parse().expect("slot diff threshold")
 }
 
 fn read_geyser_config() -> GrpcSourceConfig {
@@ -277,6 +284,7 @@ async fn rpc_get_token_accounts_by_owner(rpc_client: Arc<RpcClient>) {
 async fn rpc_get_signatures_for_address(rpc_client: Arc<RpcClient>) {
     let address = Pubkey::from_str("Vote111111111111111111111111111111111111111").unwrap();
 
+    // will be deprecated with v2 (pan)
     let config = GetConfirmedSignaturesForAddress2Config {
         before: None,
         until: None,
@@ -405,7 +413,7 @@ fn slots() -> SubscribeRequest {
 }
 
 async fn rpc_getslot_from_rpc(rpc: Arc<RpcClient>) -> Slot {
-    loop {
+    for _i in 0..10 {
         let res = rpc
             .get_slot_with_commitment(CommitmentConfig::processed())
             .await;
@@ -421,6 +429,8 @@ async fn rpc_getslot_from_rpc(rpc: Arc<RpcClient>) -> Slot {
         }
         tokio::time::sleep(Duration::from_millis(800)).await;
     }
+
+    panic!("Failed to get slot from reference rpc");
 }
 
 async fn spawn_get_our_grpc_geyser_slot(config: GrpcSourceConfig, oneshot: Sender<u64>) {
@@ -444,7 +454,7 @@ async fn spawn_get_our_grpc_geyser_slot(config: GrpcSourceConfig, oneshot: Sende
     });
 }
 
-async fn slot_latency_check(geyser_grpc_config: GrpcSourceConfig, ref_rpc_client: Arc<RpcClient>) {
+async fn slot_latency_check(geyser_grpc_config: GrpcSourceConfig, ref_rpc_client: Arc<RpcClient>, slot_lag_threshold: u64) {
     let (tx, rx) = oneshot::channel();
     spawn_get_our_grpc_geyser_slot(geyser_grpc_config, tx).await;
 
@@ -459,10 +469,8 @@ async fn slot_latency_check(geyser_grpc_config: GrpcSourceConfig, ref_rpc_client
 
     info!("Slot lag: {} (us:{} them:{})", lag, our_slot, upper_slot);
 
-    const SLOT_LAG_ERROR_THRESHOLD: u64 = 10;
-
     assert!(
-        lag < SLOT_LAG_ERROR_THRESHOLD,
+        lag < slot_lag_threshold,
         "Slot lag was too high (us:{} them:{})",
         our_slot,
         upper_slot
