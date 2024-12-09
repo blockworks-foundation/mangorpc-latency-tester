@@ -465,7 +465,7 @@ async fn slot_latency_check(geyser_grpc_config: GrpcSourceConfig, ref_rpc_client
 
     // Our slot: 294879057, Upper slot: 294879058
 
-    let lag = our_slot.saturating_sub(upper_slot).max(0);
+    let lag = upper_slot.saturating_sub(our_slot).max(0);
 
     info!("Slot lag: {} (us:{} them:{})", lag, our_slot, upper_slot);
 
